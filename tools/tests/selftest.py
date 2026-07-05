@@ -35,6 +35,11 @@ expect("marom_bad", FIX / "marom_bad.html", "marom", must_have_errors=[
 
 expect("marom_good", FIX / "marom_good.html", "marom", must_pass=True)
 
+expect("elementor_bad", FIX / "elementor_bad.html", "marom", must_have_errors=[
+    "UNICODE_BIDI", "SVG_INLINE", "GA_EVENT", "TARGET_BLANK",
+    "CHAR_BLOCKER", "CSS_UNBALANCED", "MEDIA_NESTED", "HREF_EMPTY",
+])
+
 expect("csb_bad", FIX / "csb_bad.html", "csb", must_have_errors=[
     "EMDASH", "FORBIDDEN_LINK", "EXPERT",
 ])
