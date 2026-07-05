@@ -5,14 +5,17 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from pal_lint import run
+from pal_lint import run, detect_type
 
 FIX = Path(__file__).parent / "fixtures"
 FAILED = []
 
-def expect(name, path, site, must_have_errors=(), must_pass=False, doc_type=None):
+def expect(name, path, site, must_have_errors=(), must_pass=False, doc_type=None,
+           expect_type=None):
     rep, s, d = run(path, site, doc_type)
     got = {e["rule"] for e in rep.errors}
+    if expect_type and d != expect_type:
+        FAILED.append(f"{name}: detect_type החזיר {d}, מצופה {expect_type}")
     if must_pass:
         if rep.errors:
             FAILED.append(f"{name}: אמור לעבור ירוק אבל יש {sorted(got)}")
@@ -30,10 +33,24 @@ expect("marom_bad", FIX / "marom_bad.html", "marom", must_have_errors=[
     "BACKSLASH", "PCT_UPPER", "TERM", "EXPERT", "PHONE",
     "BRAND_BEKO", "DELONGHI_COFFEE", "FORBIDDEN_SOURCE",
     "FORBIDDEN_LINK", "XML_SITEMAP", "VIDEO_PLACEHOLDER",
-    "SCHEMA_OFFERS", "NAP_ADDR", "NAP_PHONE",
+    "SCHEMA_PRODUCT_BLOG", "NAP_ADDR", "NAP_PHONE",
 ])
 
-expect("marom_good", FIX / "marom_good.html", "marom", must_pass=True)
+expect("marom_good", FIX / "marom_good.html", "marom", must_pass=True,
+       expect_type="blog")
+
+expect("blog_good", FIX / "blog_good.html", "csb", must_pass=True,
+       expect_type="blog")  # bh-pref-mini אינו סמן brandhub
+
+expect("blog_product_schema", FIX / "blog_product_schema.html", "csb",
+       must_have_errors=["SCHEMA_PRODUCT_BLOG"])
+
+expect("brandhub_good", FIX / "brandhub_good.html", "marom", must_pass=True,
+       expect_type="brandhub")  # כולל /brands/haier-service/ — לא קישור אסור
+
+expect("brandhub_bad_responsive", FIX / "brandhub_bad_responsive.html", "marom",
+       must_have_errors=["RESPONSIVE_GRID", "RESPONSIVE_STICKY",
+                         "RESPONSIVE_MEDIA", "PHONE_ENTITY", "CTA_LOGIN"])
 
 expect("elementor_bad", FIX / "elementor_bad.html", "marom", must_have_errors=[
     "UNICODE_BIDI", "SVG_INLINE", "GA_EVENT", "TARGET_BLANK",
@@ -49,7 +66,13 @@ expect("plrom_bad", FIX / "plrom_bad.html", "plrom", must_have_errors=[
 ])
 
 expect("brandhub_encoded", FIX / "brandhub_encoded.html", "marom",
-       must_have_errors=["BRANDHUB_ENCODED"], doc_type="brandhub")
+       must_have_errors=["WAF_ENCODED"], doc_type="brandhub")
+
+expect("waf_blog", FIX / "waf_blog.html", "marom",
+       must_have_errors=["WAF_ENCODED"], expect_type="blog")
+
+expect("product_bad", FIX / "product_bad.md", "csb",
+       must_have_errors=["TERM_IMITATION", "EXPERT"], expect_type="product")
 
 print()
 if FAILED:

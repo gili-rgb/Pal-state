@@ -1,5 +1,5 @@
 # PAL STATE
-עודכן: 2026-07-05
+עודכן: 2026-07-05 (audit חוצה-סקילים)
 
 > כללי ברזל (NAP, קישורים אסורים, טרמינולוגיה, פרוטוקול SKILL, Yoast) חיים בזיכרון המובנה. לא משוכפלים כאן.
 
@@ -9,14 +9,16 @@
 
 | סקיל | גרסה | סטטוס | פתוח |
 |------|------|-------|------|
-| content-machine | v7.13 | יציב, ממתין להתקנת ZIP | בירור: האם v7.10-v7.11 קיימות כ-ZIP מחוץ למותקן (הבסיס ל-v7.12 הוא v7.9 המותקנת) |
-| brand-hub-machine | v1.15 | יציב, ממתין להתקנת ZIP | 3 עמודים צריכים תיקון Product schema רטרו |
-| product-page-machine | v7.0 | יציב | — |
+| content-machine | v7.15 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v7.14) | בירור v7.10-v7.11 |
+| brand-hub-machine | v1.16 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v1.15) | 3 עמודי מרום — רטרו hex+offers בסבב אחד |
+| product-page-machine | v7.1 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v7.0) | references נבנו מחדש (נפלו מ-ZIP v7.0) |
 | ai-visibility-audit | v1.0 | פעיל | — |
-| global-notes | — | פעיל | NOTES.md לא persists בין שיחות — לא מקור אמת |
+| global-notes | — | מומלץ למחיקה (זומבי: NOTES.md לא persists, pal-state החליף) | — |
+| pal-lint (tools/) | v1.2.0 | selftest ירוק, 12 fixtures | — |
 
 ### לקחי גרסה אחרונים (תקציר — הפירוט בזיכרון ובראש כל SKILL)
-- content-machine v7.13: בלוק ה-VALIDATE Elementor המוטמע נמחק — pal-lint v1.1.0 (בריפו זה) הוא המקור היחיד; CONTENT/YOAST/LINKS/DEEP מוטמעים עד pal-lint v1.2.
+- 2026-07-05 (audit חוצה-סקילים): pal-lint v1.2.0 קלט את כל הבדיקות המוטמעות (Yoast, Zero-Hallucination, schema עמוק, WCAG, responsive, CTA, WAF גם בבלוג) — אפס לוגיקת בדיקה בסקילים. content-machine v7.15: אין ישות Product בבלוג (mentions=Brand). brand-hub v1.16: תבניות hex קשיח (77 var הומרו) + טבלת צבעים לפי תפקיד ואתר + שער קיום/רענון. PPM v7.1: מומחה מקובץ project (CSB=אילן שמה, לא סמי), שלב 0 MCP+GSC, pal-lint על Markdown. טלפון מרום קנוני: *2620.
+- content-machine v7.13: בלוק ה-VALIDATE Elementor המוטמע נמחק — pal-lint הוא המקור היחיד.
 - content-machine v7.12 (audit 2026-07-05): מרום בלי get_categories; כלל decode ל-permalink; שער אנטי-קניבליזציה (מיקום 4-25 = עמוד קיים מדורג, ברירת מחדל Refresh); content-ledger כמקור dedup ראשון; brand hub בתקציב הקישורים; אכיפת Yoast/קישורים/Schema בקוד (yoast_check, link_audit, schema_deep).
 - brand-hub-machine v1.15: יישור שני הכללים המשותפים (מרום get_categories, decode).
 - content-machine v7.7: כל CSS ל-hex קשיח. אפס var()/token/CSS comments ב-<style>. טבלת צבעים role-aware per-site. VALIDATE Step 13.
