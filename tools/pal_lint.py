@@ -19,7 +19,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"  # v1.1.0 (2026-07-05): נוספו חוסמי Elementor שחסרו מול VALIDATE של הסקילים — unicode-bidi, SVG inline, data-ga-event, target=_blank, U+2011/U+00AD/U+200B, איזון סוגריי CSS, @media מקונן, href ריק, תגיות לא מאוזנות
 
 # ---------------------------------------------------------------- כללי אמת
 
@@ -148,6 +148,31 @@ def check_backslash(html, rep):
     body = strip_blocks(html, "script")
     for m in re.finditer(r"\\", body):
         rep.err("BACKSLASH", f"backslash ב-HTML גלוי (חוסם publish, בד\"כ geresh escaped) שורה {line_of(body, m.start())}: {snippet(body, m.start())}")
+
+def check_elementor_blockers(html, rep):
+    """חוסמי Elementor שהיו רק ב-VALIDATE המוטמע בסקילים — v1.1.0 מיישר לכיסוי מלא."""
+    if "unicode-bidi" in html:
+        rep.err("UNICODE_BIDI", "unicode-bidi — חוסם שמירת Elementor בכל וריאציה")
+    for m in re.finditer(r"<svg\b", html, flags=re.I):
+        rep.err("SVG_INLINE", f"<svg> inline שורה {line_of(html, m.start())} — השתמש ב-HTML entity (&#9733; &#9742;)")
+    if "data-ga-event" in html:
+        rep.err("GA_EVENT", "data-ga-event — אסור בווידג'ט Elementor")
+    for m in re.finditer(r'target="_blank"', html):
+        rep.err("TARGET_BLANK", f'target="_blank" שורה {line_of(html, m.start())} — אסור')
+    for cp, nm in ((0x2011, "U+2011 non-break hyphen"), (0x00AD, "U+00AD soft hyphen"), (0x200B, "U+200B zero-width")):
+        for m in re.finditer(chr(cp), html):
+            rep.err("CHAR_BLOCKER", f"{nm} שורה {line_of(html, m.start())} — מקף = '-' רגיל")
+    for s in re.findall(r"<style\b[^>]*>(.*?)</style>", html, flags=re.S | re.I):
+        o, c = s.count("{"), s.count("}")
+        if o != c:
+            rep.err("CSS_UNBALANCED", f"CSS לא מאוזן: {{ ={o}, }} ={c} — הגורם הנפוץ ל'החיבור אבד'")
+        if re.search(r"@media[^{]*\{[^{}]*@media", s):
+            rep.err("MEDIA_NESTED", "@media מקונן — אסור")
+    for m in re.finditer(r'href=(""|"\s*"|(?=[\s>]))', html):
+        rep.err("HREF_EMPTY", f"href ריק שורה {line_of(html, m.start())}")
+    for tag in ("article", "style", "script"):
+        if len(re.findall(rf"<{tag}\b", html, flags=re.I)) != len(re.findall(rf"</{tag}>", html, flags=re.I)):
+            rep.err("TAG_UNBALANCED", f"<{tag}> לא מאוזן")
 
 def check_percent_encoding(html, rep, doc_type):
     urls = re.findall(r'(?:href|src)="([^"]+)"', html)
@@ -321,6 +346,7 @@ def run(path, site=None, doc_type=None):
     check_emdash(html, rep)
     check_css(html, rep)
     check_backslash(html, rep)
+    check_elementor_blockers(html, rep)
     check_percent_encoding(html, rep, doc_type)
     check_terms(html, rep)
     check_video(html, rep)
