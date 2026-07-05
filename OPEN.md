@@ -1,5 +1,5 @@
 # OPEN — משימות פתוחות
-עודכן: 2026-06-29
+עודכן: 2026-07-03
 
 ## brand-hub-machine
 - [ ] תיקון Product schema רטרו ל-3 עמודי מותג ב-Marom: Haier, Blomberg, DeLonghi
@@ -12,7 +12,9 @@
 
 ## תשתית / ממשק
 - [ ] הוספת changelog קצר בראש כל SKILL file (שורה per-version)
-- [ ] שקילת VALIDATE כ-script עצמאי שרץ לפני כל submit (לא רק כצעד ב-SKILL)
+- [x] VALIDATE כ-script עצמאי — נסגר: tools/pal_lint.py (2026-07-03)
+- [ ] הוספת שורת pal-lint כצעד חובה ב-SKILL files בסבב העדכון הבא של כל סקיל
+- [ ] חיבור GitHub connector/PAT ל-Claude כדי לאפשר push אוטונומי ל-pal-state (מבטל את ה-workaround של ZIP ידני לצמיתות)
 - [ ] טריגר בזיכרון המובנה: "בתחילת כל משימה לא-טריוויאלית קרא pal-state"
 
 ## GBP אוטומציה

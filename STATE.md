@@ -1,5 +1,5 @@
 # PAL STATE
-עודכן: 2026-06-29
+עודכן: 2026-07-03
 
 > כללי ברזל (NAP, קישורים אסורים, טרמינולוגיה, פרוטוקול SKILL, Yoast) חיים בזיכרון המובנה. לא משוכפלים כאן.
 
@@ -13,6 +13,7 @@
 | brand-hub-machine | v1.12 | יציב | 3 עמודים צריכים תיקון Product schema רטרו |
 | product-page-machine | v7.0 | יציב | — |
 | global-notes | — | פעיל | NOTES.md לא persists בין שיחות — לא מקור אמת |
+| pal-lint | v1.0.0 | פעיל | tools/pal_lint.py — gate חוסם לפני כל הגשה, selftest מלא |
 
 ### לקחי גרסה אחרונים (תקציר — הפירוט בזיכרון)
 - content-machine v7.7: כל CSS ל-hex קשיח. אפס var()/token/CSS comments ב-<style>. טבלת צבעים role-aware per-site. VALIDATE Step 13.
