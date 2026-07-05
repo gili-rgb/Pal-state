@@ -9,13 +9,14 @@
 
 | סקיל | גרסה | סטטוס | פתוח |
 |------|------|-------|------|
-| content-machine | v7.12 | יציב, ממתין להתקנת ZIP | בירור: האם v7.10-v7.11 קיימות כ-ZIP מחוץ למותקן (הבסיס ל-v7.12 הוא v7.9 המותקנת) |
+| content-machine | v7.13 | יציב, ממתין להתקנת ZIP | בירור: האם v7.10-v7.11 קיימות כ-ZIP מחוץ למותקן (הבסיס ל-v7.12 הוא v7.9 המותקנת) |
 | brand-hub-machine | v1.15 | יציב, ממתין להתקנת ZIP | 3 עמודים צריכים תיקון Product schema רטרו |
 | product-page-machine | v7.0 | יציב | — |
 | ai-visibility-audit | v1.0 | פעיל | — |
 | global-notes | — | פעיל | NOTES.md לא persists בין שיחות — לא מקור אמת |
 
 ### לקחי גרסה אחרונים (תקציר — הפירוט בזיכרון ובראש כל SKILL)
+- content-machine v7.13: בלוק ה-VALIDATE Elementor המוטמע נמחק — pal-lint v1.1.0 (בריפו זה) הוא המקור היחיד; CONTENT/YOAST/LINKS/DEEP מוטמעים עד pal-lint v1.2.
 - content-machine v7.12 (audit 2026-07-05): מרום בלי get_categories; כלל decode ל-permalink; שער אנטי-קניבליזציה (מיקום 4-25 = עמוד קיים מדורג, ברירת מחדל Refresh); content-ledger כמקור dedup ראשון; brand hub בתקציב הקישורים; אכיפת Yoast/קישורים/Schema בקוד (yoast_check, link_audit, schema_deep).
 - brand-hub-machine v1.15: יישור שני הכללים המשותפים (מרום get_categories, decode).
 - content-machine v7.7: כל CSS ל-hex קשיח. אפס var()/token/CSS comments ב-<style>. טבלת צבעים role-aware per-site. VALIDATE Step 13.
