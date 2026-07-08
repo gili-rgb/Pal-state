@@ -11,7 +11,7 @@
 - [x] pal-lint v1.3.0 (יישום אודיט הסקילים): ANCHOR_FORBIDDEN (ERROR) + ANCHOR_DUPLICATE/LINK_BUDGET/SPEAKABLE_MISSING (WARN) — בוצע 2026-07-08, selftest ירוק (13 fixtures). מוזג מעל v1.2.3, MAROM_PC_LINK נשמר.
 - [ ] בירור v7.10-v7.11: האם קיימות כ-ZIP מחוץ למותקן; אם כן — יישום השינויים שלהן מעל v7.13
 - [ ] פילוח חודשי ב-gsc pull (עונתיות) — הרחבת הסקריפט, ואז הסיגנל בשלב 2 נכנס לתוקף
-- [ ] מילוי content-ledger.md רטרו: המאמרים שכבר פורסמו (מ-recent_chats + היסטוריה)
+- [x] מילוי content-ledger.md רטרו: 123 פוסטים חיים (csb 53, marom 32, plrom 38) נשלפו מ-/blog/ דרך WooCommerce MCP get_page_html (מקור אמת חי, לא היסטוריה). בוצע 2026-07-08. תאריך+שאילתות יעד = "—" (לא ניתן לחילוץ מהאינדקס, לא הומצא). דגלים: פוסט מרום חי מזכיר Beko (#הסכם שירות), 4+ פוסטי אלקטרה בפלרום — legacy שסותר כללי מותג נוכחיים.
 
 ## brand-hub-machine
 - [x] רטרו ל-5 עמודי מותג Marom (Haier, Blomberg, DeLonghi, Zanussi, Sharp→v1.16): offers חי מ-MCP + hex + מומחה מיכה איתן + לקחי v1.16. **הושלם 2026-07-08.**
