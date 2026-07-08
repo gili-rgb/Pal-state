@@ -14,7 +14,7 @@
 | product-page-machine | v7.1 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v7.0) | references נבנו מחדש (נפלו מ-ZIP v7.0) |
 | ai-visibility-audit | v1.0 | פעיל | — |
 | global-notes | — | מומלץ למחיקה (זומבי: NOTES.md לא persists, pal-state החליף) | — |
-| pal-lint (tools/) | v1.2.2 | selftest ירוק, 12 fixtures | — |
+| pal-lint (tools/) | v1.3.0 | selftest ירוק, 13 fixtures | יישום אודיט הסקילים 2026-07-08: anchor discipline + link budget + speakable |
 
 ### לקחי גרסה אחרונים (תקציר — הפירוט בזיכרון ובראש כל SKILL)
 - 2026-07-08 (רטרו brand-hub v1.16 הושלם, 5/5 עמודי Marom): כל עמוד קיבל offers חי מ-MCP + persona מיושר (מיכה איתן, מנהל טכני ויבוא — לא "מיכה לוי"). Zanussi+Sharp נמצאו עדיין על var(--bh-*) הישן והומרו ל-hex קשיח (חוסם Elementor edit 27). pal-lint עלה v1.2.0→v1.2.2: שני false-positives של כללי מותג תוקנו בשורש — BRAND_BEKO ("בקו" תפס "בקושי"/"המתנה בקו") ו-DELONGHI_FRIDGE ("מקרר" מעמוד אחר + "דלונגי" מרשימת מותגים). שניהם עברו לבדיקה פסקה-פסקה/הקשר-מותג. sha f2f94584d5c8.

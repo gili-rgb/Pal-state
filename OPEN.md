@@ -8,6 +8,7 @@
 - [x] content-machine v7.13 נוצר — בלוק ה-Elementor המוטמע נמחק, שלב 13 מריץ pal-lint בלבד. ZIP אצל גיל, ממתין להתקנה
 - [x] pal-lint v1.2.0: קליטת yoast_check / link_audit / schema_deep+WCAG + responsive/CTA/WAF-blog — בוצע 2026-07-05, selftest ירוק (12 fixtures)
 - [x] pal-lint v1.2.2: תיקון שני false-positives של כללי מותג (BRAND_BEKO תפס "בקושי"; DELONGHI_FRIDGE תפס "מקרר"+"דלונגי" מרשימת מותגים) — בוצע 2026-07-08, selftest ירוק. sha f2f94584d5c8
+- [x] pal-lint v1.3.0 (יישום אודיט הסקילים): ANCHOR_FORBIDDEN (ERROR) + ANCHOR_DUPLICATE/LINK_BUDGET/SPEAKABLE_MISSING (WARN) — בוצע 2026-07-08, selftest ירוק (13 fixtures). מוזג מעל v1.2.3, MAROM_PC_LINK נשמר.
 - [ ] בירור v7.10-v7.11: האם קיימות כ-ZIP מחוץ למותקן; אם כן — יישום השינויים שלהן מעל v7.13
 - [ ] פילוח חודשי ב-gsc pull (עונתיות) — הרחבת הסקריפט, ואז הסיגנל בשלב 2 נכנס לתוקף
 - [ ] מילוי content-ledger.md רטרו: המאמרים שכבר פורסמו (מ-recent_chats + היסטוריה)

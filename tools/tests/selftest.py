@@ -42,6 +42,9 @@ expect("marom_good", FIX / "marom_good.html", "marom", must_pass=True,
 expect("blog_good", FIX / "blog_good.html", "csb", must_pass=True,
        expect_type="blog")  # bh-pref-mini אינו סמן brandhub
 
+expect("anchor_bad", FIX / "anchor_bad.html", "csb", doc_type="blog",
+       must_have_errors=["ANCHOR_FORBIDDEN"])  # v1.3.0; ANCHOR_DUPLICATE/LINK_BUDGET/SPEAKABLE = WARN
+
 expect("blog_product_schema", FIX / "blog_product_schema.html", "csb",
        must_have_errors=["SCHEMA_PRODUCT_BLOG"])
 

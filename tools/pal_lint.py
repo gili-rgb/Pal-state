@@ -21,11 +21,12 @@ import unicodedata
 from pathlib import Path
 
 # changelog:
+#  v1.3.0 (2026-07-08) — יישום אודיט הסקילים: 4 כללים חדשים — ANCHOR_FORBIDDEN (ERROR: עוגן "כאן"/"לחץ כאן"/"למידע נוסף" בקישור פנימי), ANCHOR_DUPLICATE (WARN), LINK_BUDGET (WARN blog: מחוץ ל-4-14), SPEAKABLE_MISSING (WARN blog/brandhub). check_links מקבל doc_type. מוזג מעל v1.2.3 (MAROM_PC_LINK נשמר).
 #  v1.2.3 (2026-07-08) — כלל MAROM_PC_LINK: /product-category/ במרום = ERROR (המוסכמה slug עברי /[brand]-אביזרים-וחלפים/). link_audit הפך לדרישת אימות check_url חוסמת.
 #  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
 #  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
 #  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
-VERSION = "1.2.3"
+VERSION = "1.3.0"
 # v1.2.0 (2026-07-05, audit חוצה-סקילים): קליטת הבדיקות המוטמעות מהסקילים כמקור יחיד —
 #   yoast (מילים/משפטים/transitions עם גבולות מילה/H1), Zero Hallucination (אחוז/מק"ט/TOC),
 #   schema_deep (@id/FAQPage=H3/dateModified), WCAG (כותרות/alt/scope/table-wrap),
@@ -226,8 +227,29 @@ def check_percent_encoding(html, rep, doc_type):
             if re.search(r"(?:%[0-9a-fA-F]{2}){10,}", u):
                 rep.err("WAF_ENCODED", f"רצף 10+ %XX ב-href — WAF חוסם; ווידג'ט Elementor מחייב URL עברי גולמי (decode בלבד): {u[:90]}")
 
-def check_links(html, rep, site):
+FORBIDDEN_ANCHORS = {"כאן", "לחץ כאן", "לחצו כאן", "למידע נוסף", "קישור", "קרא עוד", "קראו עוד"}
+
+def check_links(html, rep, site, doc_type):
     cfg = SITES[site]
+    # --- משמעת anchor (v1.3.0) ---
+    anchors = [(u, re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", t)).strip())
+               for u, t in re.findall(r'<a\s[^>]*href="([^"]+)"[^>]*>(.*?)</a>', html, flags=re.S)]
+    seen = {}
+    for u, t in anchors:
+        if cfg["domain"] not in u and not u.startswith("/"):
+            continue
+        if t in FORBIDDEN_ANCHORS:
+            rep.err("ANCHOR_FORBIDDEN", f"עוגן אסור \"{t}\" — עוגן חייב להיות תיאורי בשפת לקוח: {u[:70]}")
+        key = (t, u)
+        seen[key] = seen.get(key, 0) + 1
+    for (t, u), n in seen.items():
+        if n > 1 and t:
+            rep.warn("ANCHOR_DUPLICATE", f"אותו עוגן \"{t[:40]}\" לאותו יעד {n} פעמים — לגוון ניסוח")
+    # --- תקציב קישורים (v1.3.0, blog בלבד) ---
+    if doc_type == "blog":
+        n_int = len([1 for u, _ in anchors if cfg["domain"] in u or u.startswith("/")])
+        if n_int < 4 or n_int > 14:
+            rep.warn("LINK_BUDGET", f"{n_int} קישורים פנימיים — מחוץ לטווח 4-14 (תקציב גוף 4-7 + cluster/brand-hub/CTA)")
     urls = set(re.findall(r'(?:href|src)="([^"]+)"', html))
     urls |= set(re.findall(r'"url"\s*:\s*"([^"]+)"', html))
     for u in urls:
@@ -379,6 +401,10 @@ def check_jsonld(html, rep, site, doc_type):
                     qn = re.sub(r"\s+", " ", q.get("name", "")).strip()
                     if qn and qn not in h3s:
                         rep.err("SCHEMA_FAQ_H3", f"שאלת FAQPage לא זהה ל-H3 בעמוד: {qn[:60]}")
+            if doc_type in ("blog", "brandhub") and ("Article" in types or "WebPage" in types):
+                spk = json.dumps(ent.get("speakable", {}), ensure_ascii=False)
+                if "direct-answer" not in spk:
+                    rep.warn("SPEAKABLE_MISSING", f"ישות {types[0]} בלי speakable שמצביע על .direct-answer (v7.4/v1.x)")
             if "Article" in types and ent.get("dateModified"):
                 lu = re.search(r'class="last-updated"[^>]*>(.*?)</', html, flags=re.S)
                 if lu:
@@ -546,7 +572,7 @@ def run(path, site=None, doc_type=None, keyword=None):
         if d in html.lower():
             rep.err("FORBIDDEN_SOURCE", f"אזכור מקור אסור: {d}")
     if site:
-        check_links(html, rep, site)
+        check_links(html, rep, site, doc_type)
         check_expert(html, rep, site)
         check_phones(html, rep, site)
         check_brand_scope(html, rep, site)
