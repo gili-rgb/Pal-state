@@ -20,7 +20,11 @@ import sys
 import unicodedata
 from pathlib import Path
 
-VERSION = "1.2.0"
+# changelog:
+#  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
+#  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
+#  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
+VERSION = "1.2.2"
 # v1.2.0 (2026-07-05, audit חוצה-סקילים): קליטת הבדיקות המוטמעות מהסקילים כמקור יחיד —
 #   yoast (מילים/משפטים/transitions עם גבולות מילה/H1), Zero Hallucination (אחוז/מק"ט/TOC),
 #   schema_deep (@id/FAQPage=H3/dateModified), WCAG (כותרות/alt/scope/table-wrap),
@@ -285,16 +289,29 @@ def check_brand_scope(html, rep, site):
     title = " ".join(re.findall(r"<title[^>]*>(.*?)</title>", html, flags=re.S | re.I))
     head = re.sub(r"<[^>]+>", " ", h1 + " " + title)
     if site == "marom":
-        if re.search(r"בקו|Beko", head, flags=re.I):
+        # "בקו" העברי דו-משמעי: מותג Beko או צירוף ב+קו ("המתנה בקו", "בקושי").
+        # מזהים מותג רק כש: (א) Beko לטיני (חד-משמעי), או
+        # (ב) "בקו" צמוד למונח מכשיר/שירות (מקרר/מכונה/תנור/מדיח/שירות/מותג/דגם).
+        _dev = r"מקרר|מכונ|תנור|מדיח|מקפיא|שירות|מותג|דגם|חלקי|תיקון"
+        beko_re = (
+            r"(?<![A-Za-z])Beko(?![A-Za-z])"
+            r"|בקו\s+(?:" + _dev + r")"
+            r"|(?:" + _dev + r")\s+בקו(?![א-ת])"
+        )
+        if re.search(beko_re, head, flags=re.I):
             rep.err("BRAND_BEKO", "תוכן Beko במרום אסור (כבר לא שירות רשמי)")
-        elif re.search(r"בקו|Beko", text, flags=re.I):
+        elif re.search(beko_re, text, flags=re.I):
             rep.warn("BRAND_BEKO", "אזכור Beko בגוף תוכן מרום — לוודא שאין claim לשירות רשמי")
         if re.search(r"דלונגי|DeLonghi|De'Longhi", text, flags=re.I):
             for para in re.split(r"</p>|</h[1-6]>|\n\n", visible_text(html)):
                 if re.search(r"מכונ(ת|ות)\s+(ה)?קפה", para) and "שירות רשמי" in para:
                     rep.err("DELONGHI_COFFEE", "claim של \"שירות רשמי\" למכונות קפה דלונגי — מרום מתקנת אך לא רשמית (Brimag היבואן)")
-        if re.search(r"מקרר", text) and re.search(r"דלונגי|DeLonghi", text, flags=re.I):
-            rep.warn("DELONGHI_FRIDGE", "מקרר + דלונגי באותו תוכן — אין מקררים בליין דלונגי ישראל, לוודא")
+        # מקרר+דלונגי: יורה רק כשהשניים באותה פסקת תוכן (כמו כלל COFFEE).
+        # מונע false-positive מ"מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema.
+        for para in re.split(r"</p>|</h[1-6]>|</li>|\n\n", visible_text(html)):
+            if re.search(r"מקרר", para) and re.search(r"דלונגי|DeLonghi", para, flags=re.I):
+                rep.warn("DELONGHI_FRIDGE", "מקרר + דלונגי באותה פסקה — אין מקררים בליין דלונגי ישראל, לוודא")
+                break
     if site == "plrom":
         if re.search(r"אלקטרה|Electra", head, flags=re.I):
             rep.err("BRAND_ELECTRA", "תוכן אלקטרה בפלרום אסור")

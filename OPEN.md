@@ -7,15 +7,16 @@
 - [x] דחיפת pal-lint v1.1.0 (כיסוי מלא של חוסמי Elementor) — בוצע 2026-07-05
 - [x] content-machine v7.13 נוצר — בלוק ה-Elementor המוטמע נמחק, שלב 13 מריץ pal-lint בלבד. ZIP אצל גיל, ממתין להתקנה
 - [x] pal-lint v1.2.0: קליטת yoast_check / link_audit / schema_deep+WCAG + responsive/CTA/WAF-blog — בוצע 2026-07-05, selftest ירוק (12 fixtures)
+- [x] pal-lint v1.2.2: תיקון שני false-positives של כללי מותג (BRAND_BEKO תפס "בקושי"; DELONGHI_FRIDGE תפס "מקרר"+"דלונגי" מרשימת מותגים) — בוצע 2026-07-08, selftest ירוק. sha f2f94584d5c8
 - [ ] בירור v7.10-v7.11: האם קיימות כ-ZIP מחוץ למותקן; אם כן — יישום השינויים שלהן מעל v7.13
 - [ ] פילוח חודשי ב-gsc pull (עונתיות) — הרחבת הסקריפט, ואז הסיגנל בשלב 2 נכנס לתוקף
 - [ ] מילוי content-ledger.md רטרו: המאמרים שכבר פורסמו (מ-recent_chats + היסטוריה)
 
 ## brand-hub-machine
-- [~] רטרו ל-5 עמודי מותג Marom (Haier, Blomberg, DeLonghi, Zanussi, Sharp→v1.16): offers חי מ-MCP + hex + מומחה מיכה איתן + לקחי v1.16.
+- [x] רטרו ל-5 עמודי מותג Marom (Haier, Blomberg, DeLonghi, Zanussi, Sharp→v1.16): offers חי מ-MCP + hex + מומחה מיכה איתן + לקחי v1.16. **הושלם 2026-07-08.**
   - [x] Haier — הושלם 2026-07-07, pal-lint v1.2.0 ירוק, ווידג'ט נמסר
-  - [ ] Blomberg / DeLonghi / Zanussi — חסום: צינור WooCommerce MCP נפל אחרי סבב Haier ולא קם (5 tool_search החזירו רק Canva/GitHub/Gmail)
-  - [ ] Sharp — רטרו חוזר v1.12→v1.16
+  - [x] Blomberg / DeLonghi / Zanussi — הושלמו 2026-07-08 (הצינור חזר). Zanussi היה עדיין על var(--bh-*) והומר ל-hex
+  - [x] Sharp — הושלם 2026-07-08, רטרו v1.12→v1.16 (var→hex + persona), pal-lint v1.2.2 ירוק
 - [ ] פורward links: הגריד ב-5 העמודים מפנה ל-8 /brands/[brand]-service/ שעדיין 404 (kitchenaid/magimix/tefal/philips/moulinex/grundig/indesit/lavamat). גיל בונה בקרוב — לא לתקן ל-hubs חנות.
 
 ## תשתית — צינור MCP (חדש 2026-07-07)

@@ -1,5 +1,5 @@
 # PAL STATE
-עודכן: 2026-07-05 (audit חוצה-סקילים)
+עודכן: 2026-07-08 (רטרו brand-hub v1.16 הושלם 5/5 + pal-lint v1.2.2)
 
 > כללי ברזל (NAP, קישורים אסורים, טרמינולוגיה, פרוטוקול SKILL, Yoast) חיים בזיכרון המובנה. לא משוכפלים כאן.
 
@@ -10,13 +10,14 @@
 | סקיל | גרסה | סטטוס | פתוח |
 |------|------|-------|------|
 | content-machine | v7.15 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v7.14) | בירור v7.10-v7.11 |
-| brand-hub-machine | v1.16 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v1.15) | רטרו hex+offers: Haier ✓ (2026-07-07). Blomberg/DeLonghi/Zanussi/Sharp ממתינים לצינור MCP |
+| brand-hub-machine | v1.16 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v1.15) | רטרו hex+offers הושלם 2026-07-08: Haier ✓ Blomberg ✓ DeLonghi ✓ Zanussi ✓ Sharp ✓ (כל 5 עמודי Marom) |
 | product-page-machine | v7.1 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v7.0) | references נבנו מחדש (נפלו מ-ZIP v7.0) |
 | ai-visibility-audit | v1.0 | פעיל | — |
 | global-notes | — | מומלץ למחיקה (זומבי: NOTES.md לא persists, pal-state החליף) | — |
-| pal-lint (tools/) | v1.2.0 | selftest ירוק, 12 fixtures | — |
+| pal-lint (tools/) | v1.2.2 | selftest ירוק, 12 fixtures | — |
 
 ### לקחי גרסה אחרונים (תקציר — הפירוט בזיכרון ובראש כל SKILL)
+- 2026-07-08 (רטרו brand-hub v1.16 הושלם, 5/5 עמודי Marom): כל עמוד קיבל offers חי מ-MCP + persona מיושר (מיכה איתן, מנהל טכני ויבוא — לא "מיכה לוי"). Zanussi+Sharp נמצאו עדיין על var(--bh-*) הישן והומרו ל-hex קשיח (חוסם Elementor edit 27). pal-lint עלה v1.2.0→v1.2.2: שני false-positives של כללי מותג תוקנו בשורש — BRAND_BEKO ("בקו" תפס "בקושי"/"המתנה בקו") ו-DELONGHI_FRIDGE ("מקרר" מעמוד אחר + "דלונגי" מרשימת מותגים). שניהם עברו לבדיקה פסקה-פסקה/הקשר-מותג. sha f2f94584d5c8.
 - 2026-07-05 (audit חוצה-סקילים): pal-lint v1.2.0 קלט את כל הבדיקות המוטמעות (Yoast, Zero-Hallucination, schema עמוק, WCAG, responsive, CTA, WAF גם בבלוג) — אפס לוגיקת בדיקה בסקילים. content-machine v7.15: אין ישות Product בבלוג (mentions=Brand). brand-hub v1.16: תבניות hex קשיח (77 var הומרו) + טבלת צבעים לפי תפקיד ואתר + שער קיום/רענון. PPM v7.1: מומחה מקובץ project (CSB=אילן שמה, לא סמי), שלב 0 MCP+GSC, pal-lint על Markdown. טלפון מרום קנוני: *2620.
 - content-machine v7.13: בלוק ה-VALIDATE Elementor המוטמע נמחק — pal-lint הוא המקור היחיד.
 - content-machine v7.12 (audit 2026-07-05): מרום בלי get_categories; כלל decode ל-permalink; שער אנטי-קניבליזציה (מיקום 4-25 = עמוד קיים מדורג, ברירת מחדל Refresh); content-ledger כמקור dedup ראשון; brand hub בתקציב הקישורים; אכיפת Yoast/קישורים/Schema בקוד (yoast_check, link_audit, schema_deep).
