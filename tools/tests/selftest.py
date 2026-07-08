@@ -33,7 +33,7 @@ expect("marom_bad", FIX / "marom_bad.html", "marom", must_have_errors=[
     "BACKSLASH", "PCT_UPPER", "TERM", "EXPERT", "PHONE",
     "BRAND_BEKO", "DELONGHI_COFFEE", "FORBIDDEN_SOURCE",
     "FORBIDDEN_LINK", "XML_SITEMAP", "VIDEO_PLACEHOLDER",
-    "SCHEMA_PRODUCT_BLOG", "NAP_ADDR", "NAP_PHONE",
+    "SCHEMA_PRODUCT_BLOG", "NAP_ADDR", "NAP_PHONE", "MAROM_PC_LINK",
 ])
 
 expect("marom_good", FIX / "marom_good.html", "marom", must_pass=True,

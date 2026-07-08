@@ -21,10 +21,11 @@ import unicodedata
 from pathlib import Path
 
 # changelog:
+#  v1.2.3 (2026-07-08) — כלל MAROM_PC_LINK: /product-category/ במרום = ERROR (המוסכמה slug עברי /[brand]-אביזרים-וחלפים/). link_audit הפך לדרישת אימות check_url חוסמת.
 #  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
 #  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
 #  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
-VERSION = "1.2.2"
+VERSION = "1.2.3"
 # v1.2.0 (2026-07-05, audit חוצה-סקילים): קליטת הבדיקות המוטמעות מהסקילים כמקור יחיד —
 #   yoast (מילים/משפטים/transitions עם גבולות מילה/H1), Zero Hallucination (אחוז/מק"ט/TOC),
 #   schema_deep (@id/FAQPage=H3/dateModified), WCAG (כותרות/alt/scope/table-wrap),
@@ -239,6 +240,10 @@ def check_links(html, rep, site):
                 rep.err("FORBIDDEN_LINK", f"קישור אסור באתר {site}: {u[:90]}")
         if cfg["forbidden_pc"] and "/product-category/" in low and cfg["domain"] in low:
             rep.err("FORBIDDEN_PC", f"product-category אסור בפלרום: {u[:90]}")
+        # מרום: קטגוריות מותג הן slug עברי (/[brand]-אביזרים-וחלפים/ או /sharp/),
+        # לא /product-category/. קישור product-category = כמעט תמיד 301/404. חובה לאמת.
+        if site == "marom" and "/product-category/" in low:
+            rep.err("MAROM_PC_LINK", f"קישור /product-category/ במרום — המוסכמה slug עברי (/[brand]-אביזרים-וחלפים/). אמת ב-check_url ותקן: {u[:90]}")
         if ".xml" in low and "sitemap" in low:
             rep.err("XML_SITEMAP", f"sitemap XML אסור — HTML בלבד ({cfg['sitemap_ok']}): {u[:90]}")
         if "myarea." in low and not re.search(r"/login/?$", low):
@@ -246,13 +251,16 @@ def check_links(html, rep, site):
         for other, ocfg in SITES.items():
             if other != site and ocfg["domain"] in low:
                 rep.warn("CROSS_SITE_LINK", f"קישור לדומיין של אתר אחר ({other}): {u[:90]}")
-    # link_audit: חילוץ הקישורים הפנימיים לאימות web_fetch חי (HTTP מהסנדבוקס חסום ב-WAF)
+    # link_audit: כל קישור פנימי חייב אימות check_url חי (200 + canonical זהה) לפני הגשה.
+    # HTTP ישיר מהסנדבוקס חסום ב-WAF (403), לכן האימות דרך WooCommerce MCP check_url.
+    # זו דרישת פרוטוקול חוסמת — קישור לא מאומת = לא מגישים (כלל גיל: מקור לא מאומת = לא קיים).
     internal = sorted({u for u in re.findall(r'href="([^"#][^"]*)"', html)
                        if cfg["domain"] in u})
     if internal:
-        rep.note("link_audit — אמת web_fetch חי (200 + canonical זהה) לכל קישור פנימי:")
-        for u in internal:
-            rep.note(f"   fetch: {u}")
+        rep.note("link_audit — חובה check_url חי (200 + canonical זהה) לכל קישור פנימי לפני הגשה:")
+        for i, u in enumerate(internal, 1):
+            rep.note(f"   [{i}] {u}")
+        rep.note("   ↑ אמת כל אחד ב-check_url. product-category במרום = כמעט תמיד שגוי.")
 
 def check_terms(html, rep, doc_type):
     text = visible_text(html)
