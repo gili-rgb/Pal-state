@@ -1,5 +1,5 @@
 # OPEN — משימות פתוחות
-עודכן: 2026-07-05
+עודכן: 2026-07-07
 
 ## audit content-machine (2026-07-05)
 - [ ] התקנת content-machine v7.15, brand-hub-machine v1.16, product-page-machine v7.1 (ZIPs נמסרו 2026-07-05; מחליפים את v7.13/v1.15)
@@ -12,7 +12,16 @@
 - [ ] מילוי content-ledger.md רטרו: המאמרים שכבר פורסמו (מ-recent_chats + היסטוריה)
 
 ## brand-hub-machine
-- [ ] רטרו ל-3 עמודי מותג ב-Marom (Haier, Blomberg, DeLonghi) בסבב אחד: offers block מ-MCP + המרת CSS ל-hex + לקחי v1.16 (Sharp כבר תוקן)
+- [~] רטרו ל-5 עמודי מותג Marom (Haier, Blomberg, DeLonghi, Zanussi, Sharp→v1.16): offers חי מ-MCP + hex + מומחה מיכה איתן + לקחי v1.16.
+  - [x] Haier — הושלם 2026-07-07, pal-lint v1.2.0 ירוק, ווידג'ט נמסר
+  - [ ] Blomberg / DeLonghi / Zanussi — חסום: צינור WooCommerce MCP נפל אחרי סבב Haier ולא קם (5 tool_search החזירו רק Canva/GitHub/Gmail)
+  - [ ] Sharp — רטרו חוזר v1.12→v1.16
+- [ ] פורward links: הגריד ב-5 העמודים מפנה ל-8 /brands/[brand]-service/ שעדיין 404 (kitchenaid/magimix/tefal/philips/moulinex/grundig/indesit/lavamat). גיל בונה בקרוב — לא לתקן ל-hubs חנות.
+
+## תשתית — צינור MCP (חדש 2026-07-07)
+- [ ] **שורש ה-lockup: auto-restart supervisor על תהליך stdio של WooCommerce MCP.** נפל 3× בשיחה אחת אחרי רצף check_url; לא קם עם reconnect ידני. הפעלה ידנית חוזרת = טיפול בסימפטום. צריך health-check שמזהה ניתוק ומרים מחדש, או wrapper עם restart-on-crash.
+- [ ] באג check_url: קורס על נתיב עברי raw — `UnicodeEncodeError: 'ascii' codec` על נתיב עם תווים לא-ASCII. צריך urllib.parse.quote בשרת לפני הבקשה. עוקף כרגע ידנית עם percent-encoding.
+- [ ] check_url חוסם subdomain: myarea.marom-serv.co.il מחזיר "דומיין מחוץ לאתרי Pal Group". ה-CTA הראשי בכל עמודי המותג (הזמנת טכנאי) לא ניתן לאימות דרך הכלי. להוסיף subdomains של האתרים לאלואוליסט.
 
 ## Maya
 - [ ] A/B test על וריאנטים של opening script

@@ -3,6 +3,14 @@
 
 ---
 
+## 2026-07-07 — סבב רטרו brand-hub Marom (התחיל): Haier ✓, forward links, lockup חוזר
+**מה:** התחלת סבב רטרו ל-5 עמודי מותג Marom תחת v1.16 (offers חי + hex + מומחה מיכה איתן). Haier הושלם ונמסר — pal-lint v1.2.0 ירוק. תוקן: 5 var()→hex, backslash בשני צ'יפים הוסר, URL מוצר מפוברק ב-Product schema הוחלף ל-permalink אמיתי (אומת check_url 200), offers חי 383 ILS. Blomberg/DeLonghi/Zanussi/Sharp נעצרו כי צינור ה-MCP נפל אחרי סבב Haier ולא קם.
+**הכרעת גיל (forward links):** הגריד ב-5 העמודים מקשר ל-8 עמודי /brands/[brand]-service/ שכרגע 404. הוחלט להשאיר אותם כ-forward links ולא לתקן ל-hubs חנות (/kitcheaid/, /magimix/ וכו') — גיל בונה את עמודי המותג האלה בקרוב, והקישור הסופי צריך להצביע ליעד הנכון, לא לעקיפה זמנית. עלות: 8 קישורי 404 בטווח הקצר. תועלת: אפס עבודת תיקון-חוזר כשהעמודים יעלו.
+**למה זה חשוב:** ה-lockup של ה-MCP חזר 3× בשיחה אחת, תמיד אחרי רצף check_url. זה לא אקראי — זה דפוס. reconnect ידני לא פותר, כי הכשל הוא ברמת התהליך. נרשם ב-OPEN כ-item שורש: supervisor עם auto-restart, לא הפעלה ידנית חוזרת.
+**השלכה:** המשך הסבב (Blomberg→Sharp) מותנה בחזרת הצינור. STATE + ledger (סקשן brandhub נפרד) + OPEN עודכנו. שלושה באגי צינור תועדו: lockup, check_url על עברית raw, check_url חוסם subdomains.
+
+---
+
 ## 2026-07-05 — audit חוצה-סקילים → pal-lint v1.2.0, CM v7.15, BH v1.16, PPM v7.1
 **מה:** 20 ממצאים; המרכזיים: (1) pal-lint v1.2.0 = מקור יחיד — קלט Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA-login/WAF-גם-בבלוג; הסקילים לא מכילים יותר לוגיקת בדיקה. (2) ביטול ישות Product ב-@graph של בלוגים (SCHEMA_PRODUCT_BLOG) — כלל ה"בלי offers" הישן ייצר את שגיאת ה-GSC ש-v1.12 תיקן; דף המוצר מחזיק את ה-offer, בבלוג mentions=Brand. (3) brand-hub הומר ל-hex קשיח (77 var בתבניות) + טבלת צבעים לפי תפקיד ואתר; tokens = עיון בלבד. (4) PPM: מומחה CSB היה שגוי (סמי→אילן שמה); מקור אמת = project-*.md; שלב 0 MCP+GSC; references נבנו מחדש (נפלו מ-ZIP v7.0). (5) טלפון מרום קנוני *2620 (כוכבית לפני הספרות, הכרעת גיל); הלינט מקבל גם 2620* לעמודים ישנים. (6) באגים שנתפסו בלינט עצמו: detect_type סיווג כל בלוג כ-brandhub בגלל bh-pref-mini; check_links הפיל קישורי /brands/[brand]-service/ תקינים (חסרה החרגת /brands/); SCHEMA_DATE נכשל על תאריך ישראלי לא מרופד (5.7.2026).
 **למה:** אודיט הבוקר כיסה רק content-machine; ברגע ש-pal-lint הפך למקור אמת, כל סקיל שלא יושר אליו הפך לסתירה פעילה (brand-hub token-driven מול CSS_VAR, "בלי offers" מול SCHEMA_OFFERS). דריפט בין עותקי בדיקות בסקילים הוא בדיוק מה שהלינט נועד למנוע.

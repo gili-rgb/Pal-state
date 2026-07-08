@@ -10,7 +10,7 @@
 | סקיל | גרסה | סטטוס | פתוח |
 |------|------|-------|------|
 | content-machine | v7.15 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v7.14) | בירור v7.10-v7.11 |
-| brand-hub-machine | v1.16 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v1.15) | 3 עמודי מרום — רטרו hex+offers בסבב אחד |
+| brand-hub-machine | v1.16 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v1.15) | רטרו hex+offers: Haier ✓ (2026-07-07). Blomberg/DeLonghi/Zanussi/Sharp ממתינים לצינור MCP |
 | product-page-machine | v7.1 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v7.0) | references נבנו מחדש (נפלו מ-ZIP v7.0) |
 | ai-visibility-audit | v1.0 | פעיל | — |
 | global-notes | — | מומלץ למחיקה (זומבי: NOTES.md לא persists, pal-state החליף) | — |
@@ -45,10 +45,14 @@
 ## עמודי מותג שנבנו (per-site)
 
 ### Marom
-- Sharp ✓ (עודכן ל-v1.12: offers block, hex, מומחה מיכה איתן, bh-pref-mini)
-- Haier ✓
-- Blomberg ✓ (×2 sessions)
-- DeLonghi ✓
+עמודים חיים (check_url 200): Sharp, Haier, Blomberg, DeLonghi, Zanussi.
+סבב רטרו hex+offers+מומחה+v1.16 (סדר: get_page_html → פץ' → pal-lint → check_url → מסירה):
+- Haier ✓ רטרו הושלם 2026-07-07 — offers חי 383 ILS (SKU 87-08-02526-00-), 5 var→hex, backslash הוסר, מיכה איתן, *2620, pal-lint v1.2.0 ירוק. ווידג'ט נמסר.
+- Blomberg — ממתין (צינור MCP נפל אחרי סבב Haier, לא קם)
+- DeLonghi — ממתין
+- Zanussi — ממתין
+- Sharp — ממתין (רטרו חוזר ל-v1.16; היה v1.12)
+פתוח: הגריד ב-5 העמודים מקשר ל-8 /brands/[brand]-service/ שעדיין 404 (kitchenaid/magimix/tefal/philips/moulinex/grundig/indesit/lavamat). גיל בונה אותם בקרוב — הושארו כ-forward links בכוונה, לא לתקן ל-hubs חנות.
 
 ---
 
