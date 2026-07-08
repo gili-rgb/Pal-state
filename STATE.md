@@ -12,7 +12,8 @@
 | content-machine | v7.15 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v7.14) | בירור v7.10-v7.11 |
 | brand-hub-machine | v1.16 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v1.15) | רטרו hex+offers הושלם 2026-07-08: Haier ✓ Blomberg ✓ DeLonghi ✓ Zanussi ✓ Sharp ✓ (כל 5 עמודי Marom) |
 | product-page-machine | v7.1 | ZIP נמסר 2026-07-05, ממתין להתקנה (מותקן: v7.0) | references נבנו מחדש (נפלו מ-ZIP v7.0) |
-| ai-visibility-audit | v1.0 | פעיל | — |
+| ai-visibility-audit | v1.1 | פעיל | baseline 2026-07-08: 9/15 מצוטטים (CSB 7/10, מרום 6/10, פלרום 8/10). ai-visibility.md |
+| off-site-radar | v1.0 | פעיל | baseline 2026-07-08: midrag=פער ציטוט מס' 1; מתחרים ratfon/home-service/bservice/galbit. offsite-radar.md |
 | global-notes | — | מומלץ למחיקה (זומבי: NOTES.md לא persists, pal-state החליף) | — |
 | pal-lint (tools/) | v1.3.0 | selftest ירוק, 13 fixtures | יישום אודיט הסקילים 2026-07-08: anchor discipline + link budget + speakable |
 
