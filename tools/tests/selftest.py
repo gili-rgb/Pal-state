@@ -48,6 +48,9 @@ expect("anchor_bad", FIX / "anchor_bad.html", "csb", doc_type="blog",
 expect("blog_product_schema", FIX / "blog_product_schema.html", "csb",
        must_have_errors=["SCHEMA_PRODUCT_BLOG"])
 
+expect("schema_id_collision_bad", FIX / "schema_id_collision_bad.html", "csb",
+       must_have_errors=["SCHEMA_ID_YOAST_COLLISION"])  # v1.4.0; #article/#breadcrumb מתנגשים עם @graph של Yoast
+
 expect("brandhub_good", FIX / "brandhub_good.html", "marom", must_pass=True,
        expect_type="brandhub")  # כולל /brands/haier-service/ — לא קישור אסור
 
