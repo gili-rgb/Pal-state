@@ -21,12 +21,20 @@ import unicodedata
 from pathlib import Path
 
 # changelog:
+#  v1.4.0 (2026-07-23) — כלל חדש SCHEMA_ID_YOAST_COLLISION (ERROR): @id שאנחנו מגדירים ב-JSON-LD אסור
+#    שיסתיים בדיוק ב-#article/#organization/#breadcrumb/#website/#primaryimage — אלה סיומות קבועות
+#    של ה-@graph האוטומטי של Yoast (פעיל בכל האתרים), והתנגשות @id בין שני <script> ld+json באותו
+#    עמוד גורמת ל-Rich Results Test לדווח breadcrumb/schema כלא תקין (אומת חי ב-Rich Results Test,
+#    2026-07-16, מאמר Plrom Miele). מוסכמה: content-machine→#content-*, brand-hub-machine→#brandhub-*.
+#    הערה: תיקון זה תועד קודם כבוצע (v1.4.0) אך לא נדחף בפועל לריפו — נסגר עכשיו, 2026-07-23.
 #  v1.3.0 (2026-07-08) — יישום אודיט הסקילים: 4 כללים חדשים — ANCHOR_FORBIDDEN (ERROR: עוגן "כאן"/"לחץ כאן"/"למידע נוסף" בקישור פנימי), ANCHOR_DUPLICATE (WARN), LINK_BUDGET (WARN blog: מחוץ ל-4-14), SPEAKABLE_MISSING (WARN blog/brandhub). check_links מקבל doc_type. מוזג מעל v1.2.3 (MAROM_PC_LINK נשמר).
 #  v1.2.3 (2026-07-08) — כלל MAROM_PC_LINK: /product-category/ במרום = ERROR (המוסכמה slug עברי /[brand]-אביזרים-וחלפים/). link_audit הפך לדרישת אימות check_url חוסמת.
 #  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
 #  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
 #  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
-VERSION = "1.3.0"
+VERSION = "1.4.0"
+# @id שאנחנו מגדירים אסור שיסתיים בדיוק באחת מהסיומות הבאות (שמורות ל-@graph האוטומטי של Yoast):
+YOAST_GRAPH_ID_SUFFIXES = ("#article", "#organization", "#breadcrumb", "#website", "#primaryimage")
 # v1.2.0 (2026-07-05, audit חוצה-סקילים): קליטת הבדיקות המוטמעות מהסקילים כמקור יחיד —
 #   yoast (מילים/משפטים/transitions עם גבולות מילה/H1), Zero Hallucination (אחוז/מק"ט/TOC),
 #   schema_deep (@id/FAQPage=H3/dateModified), WCAG (כותרות/alt/scope/table-wrap),
@@ -384,6 +392,13 @@ def check_jsonld(html, rep, site, doc_type):
                 continue
             t = ent.get("@type", "")
             types = t if isinstance(t, list) else [t]
+            eid = ent.get("@id")
+            if eid and any(eid.endswith(suf) for suf in YOAST_GRAPH_ID_SUFFIXES):
+                rep.err("SCHEMA_ID_YOAST_COLLISION",
+                        f"@id \"{eid}\" מסתיים בסיומת קבועה של ה-@graph האוטומטי של Yoast "
+                        f"({'/'.join(YOAST_GRAPH_ID_SUFFIXES)}) — מתנגש בין שני <script> ld+json באותו עמוד "
+                        f"וגורם ל-Rich Results Test לדווח breadcrumb/schema כלא תקין (אומת חי 2026-07-16). "
+                        f"מוסכמה: content-machine→#content-*, brand-hub-machine→#brandhub-*")
             if "Product" in types and doc_type == "blog":
                 rep.err("SCHEMA_PRODUCT_BLOG", "ישות Product ב-@graph של בלוג — אסורה (v7.15): דף המוצר מחזיק את ה-Product/offer; בבלוג mentions=Brand בלבד")
             if "Product" in types and "offers" not in ent and doc_type != "blog":
