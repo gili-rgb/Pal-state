@@ -55,6 +55,10 @@ def expect_warn(name, path, site, rules, doc_type=None):
 expect_warn("connectors_warn", FIX / "connectors_bad.html", "marom",
             ["DANGLING_CONNECTOR", "TRANSITION_STACK", "PHONE_CANON"], doc_type="blog")
 
+# v1.6.0 — לקחי ריצת "מצב שבת שארפ" (מרום, 2026-08-03)
+expect("competitor_org_bad", FIX / "competitor_org_bad.html", "marom", doc_type="blog",
+       must_have_errors=["COMPETITOR_SOURCE", "ORG_SCHEMA_DRIFT"])
+
 expect("blog_good", FIX / "blog_good.html", "csb", must_pass=True,
        expect_type="blog")  # bh-pref-mini אינו סמן brandhub
 
