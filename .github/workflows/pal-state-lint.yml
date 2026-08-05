@@ -25,3 +25,6 @@ jobs:
 
       - name: pal-lint selftest
         run: python tools/tests/selftest.py
+
+      - name: Version guard
+        run: python tools/version_guard.py
