@@ -1,0 +1,30 @@
+name: Pal State Lint
+
+# שומר סף לריפו: content-ledger.md חייב שאילתות יעד בכל שורה,
+# ו-pal_lint selftest חייב לעבור. רץ על כל push ו-PR.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Ledger lint
+        run: python tools/ledger_lint.py content-ledger.md
+
+      - name: pal-lint selftest
+        run: python tools/tests/selftest.py
+
+      - name: Version guard
+        run: python tools/version_guard.py
