@@ -20,6 +20,7 @@ exit 1 בכל כשל. אין brief = אין כתיבה.
 """
 import argparse
 import json
+import os
 import re
 import sys
 import urllib.parse
@@ -234,6 +235,26 @@ def h1_variant(pages, query):
 
 # ---------- ראשי ----------
 
+SKILL_DIR = Path(os.environ.get("CM_SKILL_DIR", "/mnt/skills/user/content-machine"))
+
+
+def canonical_sentences(site):
+    """המשפטים הקנוניים מקובץ הפרויקט. מקור יחיד, נכנס ל-brief."""
+    f = SKILL_DIR / f"project-{site}.md"
+    if not f.exists():
+        return []
+    s = f.read_text(encoding="utf-8")
+    i = s.find("משפטים קנוניים")
+    if i < 0:
+        return []
+    out = []
+    for ln in s[i:i + 2500].split("\n"):
+        m = re.match(r"\s*\d+\.\s+(.{15,})", ln)
+        if m:
+            out.append(m.group(1).strip())
+    return out
+
+
 def phase_plan(site):
     OUT.mkdir(exist_ok=True)
     lint = load_lint_version()
@@ -261,6 +282,7 @@ def phase_plan(site):
         "allowed_topics": allowed,
         "refresh_queue": refresh,
         "brand_hub_gaps": hub_gaps,
+        "canonical_sentences": canonical_sentences(site),
         "h1_variants": h1_variant(pages, allowed[0]["query"]) if allowed else [],
         "mcp_requests": [
             {"tool": "woocommerce:get_page_html",
@@ -269,6 +291,9 @@ def phase_plan(site):
             {"tool": "woocommerce:search_products",
              "args": {"site": site, "query": "<מונח מהנושא הנבחר>"},
              "purpose": "מוצרים לכרטיס Hero, permalink/מחיר/תמונה verbatim"},
+            {"tool": "web_search + web_fetch",
+             "args": {"query": "<שאילתת היעד>", "top": 5},
+             "purpose": "H2 של המתחרים → competitor_headings, ל-INFO_GAIN_DIFF"},
         ],
     }
     p = OUT / f"brief_partial_{site}.json"
@@ -310,6 +335,7 @@ def phase_finalize(site, mcp_path):
     brief["products"] = mcp.get("products", [])
     brief["brand_hub"] = mcp.get("brand_hub")
     brief["verified_links"] = mcp.get("verified_links", [])
+    brief["competitor_headings"] = mcp.get("competitor_headings", [])
     brief["dedup_layers"] = ["content-ledger", "GSC position", "live /blog/ titles"]
     if not brief["allowed_topics"]:
         die("כל הנושאים נפסלו בשכבת הכותרות החיות")

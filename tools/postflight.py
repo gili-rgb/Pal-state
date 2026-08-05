@@ -198,6 +198,145 @@ def ledger_row(html, brief, url):
     return f"| {date.today()} | {url or '[URL אחרי פרסום]'} | {h1} | {'; '.join(qs)} |"
 
 
+
+# ---------- v8.1 ----------
+
+def _lum(hexc):
+    hexc = hexc.lstrip("#")
+    if len(hexc) == 3:
+        hexc = "".join(c * 2 for c in hexc)
+    r, g, b = (int(hexc[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    f = lambda c: c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+
+
+def contrast(fg, bg):
+    a, b = _lum(fg), _lum(bg)
+    hi, lo = max(a, b), min(a, b)
+    return round((hi + 0.05) / (lo + 0.05), 2)
+
+
+def check_contrast(html):
+    """
+    v8.1: ניגודיות היא נוסחה על שני מספרים, לא בדיקה ויזואלית.
+    ה-CSS בתבנית מכיל hex מפורש ו-var() אסור בבלוג, ולכן החישוב דטרמיניסטי.
+    """
+    style = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", html, flags=re.S | re.I))
+    if not style:
+        return
+    page_bg = "#ffffff"
+    checked = 0
+    for m in re.finditer(r"([^{}]+)\{([^{}]*)\}", style):
+        sel, body = m.group(1).strip(), m.group(2)
+        fg = re.search(r"(?<!-)\bcolor:\s*(#[0-9a-fA-F]{3,6})", body)
+        if not fg:
+            continue
+        bg = re.search(r"background(?:-color)?:\s*(#[0-9a-fA-F]{3,6})", body)
+        bgv = bg.group(1) if bg else page_bg
+        # גודל גופן גדול מקבל סף מקל לפי WCAG
+        fs = re.search(r"font-size:\s*(\d+)px", body)
+        big = fs and int(fs.group(1)) >= 24
+        need = 3.0 if big else 4.5
+        ratio = contrast(fg.group(1), bgv)
+        checked += 1
+        if ratio < need:
+            err("CONTRAST_RATIO",
+                f"{sel[:40]} — {fg.group(1)} על {bgv} = {ratio}:1, נדרש {need}:1")
+    NOTES.append(f"ניגודיות: {checked} צמדי צבע נבדקו")
+
+
+def check_narrative(html, brief):
+    """v8.1: לפחות משפט קנוני אחד ב-Direct Answer, ו-Organization description מהנרטיב."""
+    sents = brief.get("canonical_sentences", [])
+    if not sents:
+        warn("NARRATIVE_MISSING", "אין משפטים קנוניים ב-brief, הבדיקה דולגה")
+        return
+    da = re.search(r'<div class="direct-answer".*?</div>', html, flags=re.S)
+    da_txt = visible(da.group()) if da else ""
+    hit = None
+    for s in sents:
+        core = " ".join(s.split()[:6]).rstrip(".")
+        if core and core in re.sub(r"\s+", " ", da_txt):
+            hit = s
+            break
+    if not hit:
+        err("NARRATIVE_MISSING",
+            "אין משפט קנוני ב-Direct Answer. חובה אחד לפחות מקובץ הפרויקט")
+    else:
+        NOTES.append(f"נרטיב קנוני: נמצא ({hit[:45]}...)")
+    org = re.search(r'"@type":\s*"Organization".*?"description":\s*"([^"]{20,})"',
+                    html, flags=re.S)
+    if org:
+        d = org.group(1)
+        if not any(" ".join(s.split()[:5]) in d for s in sents):
+            err("NARRATIVE_MISSING",
+                "Organization description אינו נגזר מהמשפטים הקנוניים")
+
+
+PAIN = ["לא עובד", "לא עובדת", "תקוע", "נתקע", "לא מקרר", "לא מחמם", "רועש", "רועשת",
+        "דולף", "מהבהב", "שבור", "סדוק", "תקלה", "בעיה", "לא נכנס", "לא נסגר",
+        "לא מתחיל", "מפסיק", "ריח", "לא בטוחים", "לא יודעים", "מתוסכל"]
+ADDRESS = ["אתם", "אתן", "שלכם", "לכם", "אצלכם", "אתה", "שלך", "תמצאו", "תדעו"]
+
+
+def check_audience_anchor(html, brief):
+    """v8.1: העוגן חייב להיות מפורש. מצב הכשל שנצפה הוא עוגן מרומז."""
+    da = re.search(r'<div class="direct-answer".*?</div>', html, flags=re.S)
+    if not da:
+        err("AUDIENCE_ANCHOR", "אין בלוק direct-answer")
+        return
+    t = re.sub(r"\s+", " ", visible(da.group()))
+    words = t.split()[:200]
+    seg = " ".join(words)
+    vocab = set(brief.get("vocabulary") or [])
+    device = [w for w in words if len(w) > 3 and (w in vocab or strip_prefix(w) in vocab)]
+    miss = []
+    if not any(p in seg for p in PAIN):
+        miss.append("מונח כאב")
+    if not any(a in seg for a in ADDRESS):
+        miss.append("פנייה ישירה לקורא")
+    if len(device) < 3:
+        miss.append("מונחי מכשיר מאוצר המילים")
+    if miss:
+        warn("AUDIENCE_ANCHOR", "עוגן הקהל אינו מפורש. חסר: " + ", ".join(miss))
+    else:
+        NOTES.append("עוגן קהל: מפורש")
+
+
+def check_info_gain(html, brief):
+    """v8.1: דיף H2 מול המתחרים. הסקריפט מודד כיסוי; אתה מכריע אם הייחוד מהותי."""
+    comp = brief.get("competitor_headings") or []
+    if not comp:
+        warn("INFO_GAIN_DIFF", "אין מיפוי H2 של מתחרים ב-brief. הרץ את מחקר המתחרים בשלב 4")
+        return
+    ours = [visible(x).strip() for x in
+            re.findall(r"<h2[^>]*>(.*?)</h2>", html, flags=re.S | re.I)]
+    ours = [x for x in ours if x and "מאמרים קשורים" not in x]
+
+    def toks(s):
+        return {w for w in re.findall(r"[\u0590-\u05FF]{3,}", s) if w not in STOP}
+
+    ctok = set()
+    for c in comp:
+        ctok |= toks(c)
+    unique, shared = [], []
+    for h in ours:
+        (unique if len(toks(h) - ctok) >= 2 else shared).append(h)
+    missing = []
+    for c in comp:
+        if not any(len(toks(c) & toks(h)) >= 2 for h in ours):
+            missing.append(c)
+    NOTES.append(f"Information Gain: {len(unique)} H2 ייחודיים לנו, "
+                 f"{len(shared)} חופפים, {len(missing)} נושאים שרק המתחרים מכסים")
+    if unique:
+        NOTES.append("   ייחודי לנו: " + " | ".join(u[:38] for u in unique[:4]))
+    if missing:
+        NOTES.append("   רק אצל המתחרים: " + " | ".join(m[:38] for m in missing[:4]))
+    if not unique:
+        err("INFO_GAIN_DIFF",
+            "אפס H2 ייחודיים מול המתחרים. המאמר אינו מוסיף מידע חדש")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--site", required=True, choices=["csb", "marom", "plrom"])
@@ -218,6 +357,10 @@ def main():
     check_h2_ratio(html)
     check_citations(html)
     check_seo_title(html, a.seo_title)
+    check_contrast(html)
+    check_narrative(html, brief)
+    check_audience_anchor(html, brief)
+    check_info_gain(html, brief)
 
     print("\n" + "=" * 60)
     for n in NOTES:

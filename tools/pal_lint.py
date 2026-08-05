@@ -32,7 +32,14 @@ from pathlib import Path
 #  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
 #  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
 #  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
-VERSION = "1.7.0"
+VERSION = "1.8.0"
+# v1.8.0 (2026-08-03, סריקת שלמות: 90 אמירות מחייבות בקבצי הסקיל מופו למנגנון אוכף.
+#   חמישה פערים אמיתיים נסגרו):
+#   SUPERLATIVE (ERROR)      — שיווקיות אסורה ממאסטר-פרומפט ("מוביל", "מהפכני", "הטוב ביותר")
+#   FOCUS_OUTLINE (ERROR)    — הסרת outline ב-:focus שוברת ניווט מקלדת
+#   PREF_STRIP_ORDER (ERROR) — bh-pref-mini חייב להיות אחרי author-bio ואחרי cta-box
+#   PERMALINK_CASE (ERROR)   — %XX ב-uppercase בקישור פנימי גורם 404
+#   TERM_PLROM_NAME (ERROR)  — "חברת פלרום"; הנכון "שירות פלרום"
 # v1.7.0 (2026-08-03, מיזוג שני מסלולי v1.6.1 שנוצרו במקביל בשני סשנים):
 #   H1_LISTICLE (WARN) — H1 בדפוס ליסטיקל. גיל דחה את הדפוס שלוש פעמים (9.7, 3.8).
 #     תופס גם בלי מספר. מועדף: הד לשאילתה ("X לא עובד: מה הסיבה ומה עושים?").
@@ -677,6 +684,60 @@ LISTICLE_PAT = [
 ]
 
 
+# "מוביל" הוא גם פועל תקין ("מוביל את הצוות"). רק הצורה המיודעת היא סופרלטיב שיווקי.
+SUPERLATIVES = ["המוביל", "המובילה", "מהפכני", "מהפכנית", "הטוב ביותר", "הטובה ביותר",
+                "חסר תקדים", "חסרת תקדים", "ברמה הגבוהה ביותר", "פריצת דרך",
+                "ללא תחרות", "הכי טוב בעולם", "מספר 1 בישראל", "אין תחליף"]
+
+
+def check_plrom_name(html, rep, site, doc_type):
+    """v1.8.0: "שירות פלרום" הוא השם. "חברת פלרום" אסור (project-plrom)."""
+    if site != "plrom":
+        return
+    if re.search(heb_bound("חברת פלרום"), visible_text(html)):
+        rep.err("TERM_PLROM_NAME", 'השם הוא "שירות פלרום", לא "חברת פלרום"')
+
+
+def check_superlatives(html, rep, doc_type):
+    """v1.8.0: שיווקיות ריקה. אסורה במאסטר-פרומפט ולא נאכפה עד היום."""
+    t = visible_text(html)
+    for s in SUPERLATIVES:
+        if re.search(heb_bound(s) if " " not in s else re.escape(s), t):
+            rep.err("SUPERLATIVE", f'שיווקיות אסורה: "{s}" — החלף בעובדה מאומתת')
+
+
+def check_focus_outline(html, rep, doc_type):
+    """v1.8.0: outline: none בלי חלופה שובר ניווט מקלדת."""
+    style = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", html, flags=re.S | re.I))
+    if not style:
+        return
+    for m in re.finditer(r"([^{}]*:focus[^{}]*)\{([^{}]*)\}", style):
+        if re.search(r"outline:\s*(none|0)", m.group(2)) and "box-shadow" not in m.group(2):
+            rep.err("FOCUS_OUTLINE", f"{m.group(1).strip()[:40]} מסיר outline בלי חלופה")
+    if ":focus" not in style:
+        rep.warn("FOCUS_OUTLINE", "אין מצב :focus-visible ב-CSS — ניווט מקלדת לא מסומן")
+
+
+def check_pref_strip_order(html, rep, doc_type):
+    """v1.8.0: רצועת bh-pref-mini אחרונה בזרימה. לעולם לא לפני ה-CTA הכספי."""
+    i = html.find("bh-pref-mini")
+    if i < 0:
+        return
+    for cls, name in (("cta-box", "cta-box"), ("author-bio", "author-bio")):
+        j = html.find(cls)
+        if 0 <= j > i or (j > i):
+            rep.err("PREF_STRIP_ORDER", f"bh-pref-mini מופיע לפני {name} — חייב להיות אחרון")
+
+
+def check_permalink_case(html, rep, doc_type):
+    """v1.8.0: uppercase ב-%XX גורם 404. ה-permalink מועתק verbatim מ-MCP."""
+    # permalink מ-MCP הוא lowercase percent-encoded. כל אות גדולה ב-%XX = קידוד מחדש = 404.
+    for m in re.finditer(r'href="([^"]*%[0-9A-Fa-f]{2}[^"]*)"', html):
+        if re.search(r"%[0-9A-Fa-f]*[A-F]", m.group(1)):
+            rep.err("PERMALINK_CASE",
+                    f"%XX עם אות גדולה בקישור (גורם 404, קודד lowercase): {m.group(1)[:55]}")
+
+
 def check_h1_listicle(html, rep, doc_type):
     """v1.7.0: דפוס ליסטיקל ב-H1. נדחה שלוש פעמים; מועדף הד לשאילתה."""
     m = re.search(r"<h1[^>]*>(.*?)</h1>", html, flags=re.S | re.I)
@@ -737,6 +798,11 @@ def run(path, site=None, doc_type=None, keyword=None):
     check_competitor_sources(html, rep, doc_type)
     check_bauknecht(html, rep, doc_type)
     check_h1_listicle(html, rep, doc_type)
+    check_plrom_name(html, rep, site, doc_type)
+    check_superlatives(html, rep, doc_type)
+    check_focus_outline(html, rep, doc_type)
+    check_pref_strip_order(html, rep, doc_type)
+    check_permalink_case(html, rep, doc_type)
     check_connectors(html, rep, doc_type)
     check_yoast(html, rep, doc_type, keyword)
     if doc_type != "product":
