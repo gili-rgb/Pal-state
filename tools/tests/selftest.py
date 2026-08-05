@@ -63,6 +63,11 @@ expect("competitor_org_bad", FIX / "competitor_org_bad.html", "marom", doc_type=
 expect_warn("h1_listicle", FIX / "competitor_org_bad.html", "marom",
             ["H1_LISTICLE"], doc_type="blog")
 
+# v1.8.0 — חמשת הפערים שנסגרו בסריקת השלמות
+expect("completeness_bad", FIX / "completeness_bad.html", "plrom", doc_type="blog",
+       must_have_errors=["TERM_PLROM_NAME", "SUPERLATIVE", "FOCUS_OUTLINE",
+                         "PREF_STRIP_ORDER", "PERMALINK_CASE"])
+
 expect("blog_good", FIX / "blog_good.html", "csb", must_pass=True,
        expect_type="blog")  # bh-pref-mini אינו סמן brandhub
 
