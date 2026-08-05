@@ -255,7 +255,9 @@ def phase_plan(site):
         "ledger_rows": len(ledger),
         "gsc_pages": len(pages),
         "vocabulary_size": len(vocab),
-        "vocabulary_top": [w for w, _ in vocab.most_common(400)],
+        "vocabulary": sorted(vocab),               # מלא. TERM_VERIFY מצליב מולו
+        "vocabulary_top": [w for w, _ in vocab.most_common(60)],   # לתצוגה בלבד
+
         "allowed_topics": allowed,
         "refresh_queue": refresh,
         "brand_hub_gaps": hub_gaps,
