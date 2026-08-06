@@ -26,5 +26,8 @@ jobs:
       - name: pal-lint selftest
         run: python tools/tests/selftest.py
 
+      - name: Flight tests (preflight/postflight)
+        run: python tools/tests/test_flight.py
+
       - name: Version guard
         run: python tools/version_guard.py
