@@ -65,6 +65,36 @@ def visible(html):
 
 # ---------- בדיקות ----------
 
+def matched_topic(html, brief):
+    """הנושא מה-brief שתואם ל-H1. משמש גם ל-TOPIC וגם ל-VIDEO."""
+    m = re.search(r"<h1[^>]*>(.*?)</h1>", html, flags=re.S | re.I)
+    h1 = visible(m.group(1)).strip() if m else ""
+    for o in brief.get("allowed_topics", []):
+        head = " ".join(o["query"].split()[:2])
+        if head and head in h1:
+            return o
+    return None
+
+
+def check_video(html, brief):
+    """
+    v8.2: ה-brief מחזיק מזהה סרטון מאומת מהערוץ שלנו. אם הוא קיים והמאמר
+    לא הטמיע אותו, זו החמצה — סרטון רשמי משלנו על אותו נושא בדיוק.
+    נצפה במאמר "מצב שבת שארפ" (2026-08-03): הסרטון היה בערוץ מאז מאי 2025.
+    """
+    o = matched_topic(html, brief)
+    v = (o or {}).get("video")
+    if not v:
+        NOTES.append("אין סרטון תואם בקטלוג לנושא הזה")
+        return
+    if v["video_id"] in html:
+        NOTES.append(f"וידאו מוטמע: {v['title'][:45]}")
+        return
+    warn("VIDEO_MISSING",
+         f'קיים סרטון רשמי בערוץ שלנו ולא הוטמע: "{v["title"][:45]}" '
+         f'({v["views"]} צפיות) — {v["embed"]}')
+
+
 def check_topic(html, brief):
     """המאמר חייב להיות על נושא מהרשימה המאושרת."""
     allowed = [o["query"] for o in brief.get("allowed_topics", [])]
@@ -357,6 +387,7 @@ def main():
     check_h2_ratio(html)
     check_citations(html)
     check_seo_title(html, a.seo_title)
+    check_video(html, brief)
     check_contrast(html)
     check_narrative(html, brief)
     check_audience_anchor(html, brief)
