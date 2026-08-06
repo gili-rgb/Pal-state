@@ -13,7 +13,9 @@ description: >
   (csb.co.il), מרום (marom-serv.co.il), פלרום (plrom.co.il).
 ---
 
-# מכונת תוכן v8.3 — SEO + GEO/AEO & HTML לאלמנטור
+# מכונת תוכן v8.4 — SEO + GEO/AEO & HTML לאלמנטור
+
+> **v8.4 (סגירת שני פערי אכיפה, 2026-08-06):** (1) **`competitor_headings` הפך לקריאה נדרשת בשלב 0** — `INFO_GAIN_DIFF` ביקש את השדה ואף שלב לא ייצר אותו, ולכן בדיקת ה-Information Gain התריעה "אין מיפוי" בכל ריצה בלי לפעול. המקור: `web_search` על שאילתת היעד + חילוץ H2 מ-3-5 התוצאות המובילות. (2) **`preflight` כבר לא נופל בשקט בלי MCP** — הודעה מפורטת מה חסר ולמה, ו-`--allow-degraded` לטיוטה מסומנת. `postflight` חוסם אותה ב-`DRAFT_BRIEF` (ERROR), כדי שטיוטה לא תתפרסם בטעות.
 
 > **v8.3 (Entity Disambiguation, 2026-08-06):** ישות `Brand` מקבלת `sameAs` לוויקידאטה ולוויקיפדיה מרישום מאומת (`pal-state/brand-entities.md`, 11 מותגים אומתו, השאר ממתינים). זה מקשר את המאמר לגרף הידע העולמי ומסיר ערפול. האימות חשף שלוש מלכודות: `Q48757454` הוא "Sharp — יצרן רובי אוויר"; לבוש ולסימנס כמותגי מוצרי חשמל אין ישות נפרדת והנכון הוא BSH; Constructa מופיעה כשני ערכים. `BRAND_SAMEAS_MISSING` (WARN) ו-`BRAND_SAMEAS_WRONG` (ERROR, קישור לתאגיד האם). pal-lint → v1.10.0, html-template → v7.10.
 
@@ -116,13 +118,24 @@ python3 /home/claude/pal-state/tools/preflight.py --site [csb|marom|plrom] --pha
 | `vocabulary` | **אוצר המילים המאומת.** מונח שאינו כאן — אסור להשתמש בו |
 | `h1_variants` | הווריאנטים לפי חשיפות. ה-H1 נגזר מהמוביל |
 
-**קריאות MCP הנדרשות** מופיעות ב-`mcp_requests`. בצע אותן, שמור ל-`mcp_results.json` עם המפתחות `live_blog_titles`, `products`, `brand_hub`, `verified_links`, והרץ:
+**שלוש הקריאות הנדרשות** מופיעות ב-`mcp_requests`. בצע את כולן ושמור ל-`mcp_results.json`:
+
+| מפתח | מקור | למה |
+|------|------|-----|
+| `live_blog_titles` | `get_page_html` על `/blog/` | שכבת דדופ שלישית |
+| `products` | `search_products` על מונח מהנושא | כרטיס Hero verbatim |
+| **`competitor_headings`** | **`web_search` על שאילתת היעד + `web_fetch` ל-3-5 תוצאות מובילות, חילוץ ה-H2 שלהן** | **מזין את `INFO_GAIN_DIFF`. בלי זה בדיקת ה-Information Gain לא פועלת** |
+| `brand_hub`, `verified_links` | לפי הצורך | זווית בידול, קישורים מאומתים |
+
+ואז:
 
 ```bash
 python3 /home/claude/pal-state/tools/preflight.py --site [site] --phase finalize --mcp mcp_results.json
 ```
 
 **exit שאינו 0 = עצירה.** אין brief, אין כתיבה. אל תמשיך "בערך".
+
+**כשה-MCP אינו זמין (v8.4):** `finalize` נעצר עם רשימה מפורשת של מה חסר. `--allow-degraded` מייצר brief מסומן `degraded`, אבל `postflight` חוסם אותו ב-`DRAFT_BRIEF`. **טיוטה כזו אינה לפרסום** — היא רק לעבודה מקומית עד שהשרת חוזר.
 
 **מה בוטל בגלל השלב הזה:** שער ה-dedup הידני (ledger + recent_chats + conversation_search + site:) הוחלף בחיסור מכני. אנטי-קניבליזציה מוכרעת לפי מיקום GSC ולא לפי שיפוט. בחירת נושא היא בחירה מרשימה, לא חיפוש.
 
