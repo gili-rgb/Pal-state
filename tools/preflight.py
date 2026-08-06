@@ -324,13 +324,61 @@ def phase_finalize(site, mcp_path):
     live = [t.strip() for t in mcp.get("live_blog_titles", []) if t.strip()]
     if not live:
         die("live_blog_titles ריק — שכבת הדדופ השלישית לא רצה")
-    lt = " || ".join(live)
+    # v1.1 — תיקון באג קריטי (2026-08-04): הגרסה הקודמת חיברה את כל הכותרות
+    # למחרוזת אחת וספרה מילים שמופיעות *איפשהו* בבלוב, בסף 2. באתר עם היסטוריה
+    # "מקרר"/"שארפ"/"חלקי" מופיעות בעשרות כותרות, ולכן 23/23 הנושאים נדחו.
+    # התיקון: השוואה מול כל כותרת בנפרד, עם נרמול תחיליות וסף 80% מהמילים.
+    # השכבה נועדה לתפוס מאמר שפורסם וטרם נרשם בלדג'ר, לא חפיפת מילים מקרית.
+    HEB_PREFIX = ("וה", "שה", "בה", "לה", "מה", "כש", "ה", "ו", "ב", "ל", "מ", "ש", "כ")
+
+    HEB_SUFFIX = ("יות", "ים", "ות")
+
+    def _norm(w):
+        for pre in HEB_PREFIX:
+            if w.startswith(pre) and len(w) - len(pre) >= 3:
+                w = w[len(pre):]
+                break
+        for suf in HEB_SUFFIX:          # רבים: "מקררים" = "מקרר"
+            if w.endswith(suf) and len(w) - len(suf) >= 3:
+                return w[: -len(suf)]
+        return w
+
+    def _sig(text):
+        return [w for w in re.findall(r"[\u0590-\u05FFA-Za-z0-9]+", text) if len(w) > 3]
+
+    def _same(a, b):
+        """
+        התאמה דו-כיוונית ולא נרמול חד-כיווני. "מקרר" מתחיל ב-מ ונרמול עיוור
+        הופך אותו ל"קרר", בעוד "למקרר" הופך ל"מקרר" — שתי צורות שלא נפגשות.
+        לכן משווים גם raw וגם מנורמל, משני הצדדים.
+        """
+        return a == b or _norm(a) == b or a == _norm(b) or _norm(a) == _norm(b)
+
+    live_sets = [(t, _sig(t)) for t in live]
+
+    def is_published(query):
+        q = _sig(query)
+        if len(q) < 2:
+            return None
+        for title, tw in live_sets:
+            if not tw:
+                continue
+            hits = sum(1 for a in q if any(_same(a, b) for b in tw))
+            if hits / len(q) >= 0.8:
+                return title
+        return None
+
     before = len(brief["allowed_topics"])
-    brief["allowed_topics"] = [
-        o for o in brief["allowed_topics"]
-        if not any(w in lt for w in o["query"].split() if len(w) > 3
-                   and sum(1 for x in o["query"].split() if len(x) > 3 and x in lt) >= 2)
-    ]
+    kept, dropped = [], []
+    for o in brief["allowed_topics"]:
+        hit = is_published(o["query"])
+        if hit:
+            dropped.append((o["query"], hit))
+        else:
+            kept.append(o)
+    brief["allowed_topics"] = kept
+    for q, t in dropped:
+        print(f"   סונן ככפילות: \"{q}\" ← כבר פורסם: \"{t[:45]}\"")
     brief["live_blog_titles"] = live
     brief["products"] = mcp.get("products", [])
     brief["brand_hub"] = mcp.get("brand_hub")
