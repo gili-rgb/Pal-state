@@ -97,6 +97,27 @@ check("ניגודיות: אדום מותג עובר", PO.contrast("#B81A21", "#f
 check("prefix: המקרר", PO.strip_prefix("המקרר"), "מקרר")
 check("prefix: מילה קצרה נשמרת", PO.strip_prefix("מים"), "מים")
 
+# ---------- התאמת סרטונים (v1.4) ----------
+import json as _json  # noqa: E402
+
+_cat_path = Path("/home/claude/pal-gsc/cats/youtube_catalog.json")
+if _cat_path.exists():
+    _cat = _json.load(open(_cat_path, encoding="utf-8"))
+    for _site, _q, _want in [
+        ("marom", "מקרר שארפ לא נכנס למצב שבת", True),
+        ("marom", "כמה עולה מקרר שארפ 4 דלתות", False),
+        ("marom", "מגירת ירקות מקרר שארפ החלפה", True),
+        ("csb", "מדיח כלים בוש תקלה e15", False),      # סרטון התקנה למאמר תקלה
+        ("csb", "ניקוי מסנן מדיח כלים בוש", True),
+        ("csb", "נעילת ילדים כיריים אינדוקציה בוש", True),
+        ("plrom", "ניקוי תנור מילה", False),            # מותג תואם, מוצר לא
+        ("plrom", "מכונת כביסה מילה מחיר", False),
+    ]:
+        _got = PF.match_video(_q, _cat.get(_site, {}).get("videos", []))
+        check(f"video: {_q[:30]}", bool(_got), _want)
+else:
+    print("ℹ️  youtube_catalog.json לא קיים — בדיקות וידאו דולגו")
+
 if FAILED:
     print("\n🔴 test_flight נכשל:")
     for f in FAILED:
