@@ -21,21 +21,34 @@
 | Miele | מילה | `Q695230` | `https://en.wikipedia.org/wiki/Miele` |
 | BSH | — | `Q614920` | `https://en.wikipedia.org/wiki/BSH_Hausger%C3%A4te` |
 | Constructa | קונסטרוקטה | `Q326933` | `https://en.wikipedia.org/wiki/Constructa-Neff` |
+| Neff | נף | `Q326933` | `https://en.wikipedia.org/wiki/Neff_GmbH` |
 | Magimix | מג'ימיקס | `Q3276973` | `https://en.wikipedia.org/wiki/Magimix` |
+| KitchenAid | קיטשן אייד | `Q1743850` | `https://en.wikipedia.org/wiki/KitchenAid` |
+| Bauknecht | באוקנכט | `Q467116` | `https://en.wikipedia.org/wiki/Bauknecht_(company)` |
+| Blomberg | בלומברג | `Q884951` | `https://en.wikipedia.org/wiki/Blomberg_(company)` |
 | Gaggenau | גגנאו | — | `https://en.wikipedia.org/wiki/Gaggenau_Hausger%C3%A4te` |
 | De'Longhi | דלונגי | — | `https://en.wikipedia.org/wiki/De%27_Longhi` |
 | Haier | האייר | — | `https://en.wikipedia.org/wiki/Haier` |
 | Zanussi | זנוסי | — | `https://en.wikipedia.org/wiki/Zanussi` |
+| Tefal | טפאל | — | `https://en.wikipedia.org/wiki/Tefal` |
+| Moulinex | מולינקס | — | `https://en.wikipedia.org/wiki/Moulinex` |
+| Breville | ברוויל | — | `https://en.wikipedia.org/wiki/Breville_Group` |
 
-**בוש וסימנס (מוצרי חשמל):** אין ישות מותג נפרדת. `sameAs` מפנה ל-BSH (`Q614920`) כיצרן, ולאתר המותג הרשמי. **אסור לקשר ל-`Robert Bosch GmbH` או ל-`Siemens AG`.**
+**בוש וסימנס (מוצרי חשמל):** אין ישות מותג נפרדת. `sameAs` מפנה ל-BSH (`Q614920`) כיצרן. **אסור לקשר ל-`Robert Bosch GmbH` או ל-`Siemens AG`.**
+
+**Neff וקונסטרוקטה חולקים QID** (`Q326933`, Constructa-Neff Vertriebs-GmbH) כי הם אותה חברה. זה נכון עובדתית. ה-URI של ויקיפדיה שונה לכל אחד.
+
+**Breville — סייג:** בבריטניה ובאירופה המותג "Breville" שייך ל-Newell Brands, ישות אחרת לגמרי, ושם החברה האוסטרלית משווקת כ-Sage. הישות הרשומה כאן היא Breville Group האוסטרלית, שהיא הרלוונטית לישראל.
 
 ---
 
-## ממתין לאימות
+## ממתין — ושתי מלכודות שזוהו
 
-בלומברג, קיטשן אייד, ברוויל, טפאל, מולינקס, פיליפס, ליבהר, נף, באוקנכט.
+**ליבהר.** `Liebherr Group` הוא תאגיד מנופים וציוד כבד. מוצרי הקירור הם `Liebherr-Hausgeräte`. **אותה מלכודת בדיוק כמו בוש.** דורש אימות פרטני לפני שנכנס.
 
-**סאוטר** — סביר שיישאר בחוץ. קיימות Sauter שוויצרית לבקרת בניינים, Sauter צרפתית לחימום, ומשפחות ומקומות באותו שם. בלי הכרעה חד-משמעית, אין קישור.
+**פיליפס.** `Koninklijke Philips` הוא היום תאגיד טכנולוגיה רפואית. **מחלקת מוצרי החשמל הביתיים נמכרה ב-2021 והפכה ל-Versuni**, שממשיכה להשתמש בשם פיליפס ברישיון. הישות הנכונה למאמר על מכשיר ביתי אינה ברורה, ודורשת הכרעה.
+
+**סאוטר.** קיימות Sauter שוויצרית לבקרת בניינים, Sauter צרפתית לחימום, ומשפחות ומקומות. **סביר שיישאר בחוץ לצמיתות.**
 
 ---
 
