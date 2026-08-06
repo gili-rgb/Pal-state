@@ -57,7 +57,7 @@ expect_warn("connectors_warn", FIX / "connectors_bad.html", "marom",
 
 # v1.6.0 — לקחי ריצת "מצב שבת שארפ" (מרום, 2026-08-03)
 expect("competitor_org_bad", FIX / "competitor_org_bad.html", "marom", doc_type="blog",
-       must_have_errors=["COMPETITOR_SOURCE", "ORG_SCHEMA_DRIFT"])
+       must_have_errors=["COMPETITOR_SOURCE", "ORG_SCHEMA_DRIFT", "BRAND_HUB_MISSING"])
 
 # v1.7.0 — דפוס H1 שגיל דחה שלוש פעמים
 expect_warn("h1_listicle", FIX / "competitor_org_bad.html", "marom",
