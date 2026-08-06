@@ -1,4 +1,4 @@
-# תבנית HTML v7.9 — מוכנה להטמעה בווידג'ט HTML של Elementor
+# תבנית HTML v7.10 — מוכנה להטמעה בווידג'ט HTML של Elementor
 
 > **v7.9 (2026-08-03):** **ישות `Product` הוסרה מה-@graph.** התבנית עדיין הציגה "6 entities, או 7 עם כרטיס מוצר" וכללה בלוק Product מלא — סתירה מול SKILL v7.15+ שקובע 6 ישויות תמיד, ומול pal-lint שאוכף `SCHEMA_PRODUCT_BLOG` כ-ERROR. דריפט בן שלוש גרסאות שנתפס באודיט v7.18. `mentions` מצביע על Brand בלבד.
 
@@ -397,7 +397,11 @@
         { "@type": "Thing", "name": "[נושא 2]" }
       ],
       "mentions": [
-        { "@type": "Brand", "name": "[מותג]" }
+        {
+          "@type": "Brand",
+          "name": "[מותג]",
+          "sameAs": ["[URI מ-brand-entities.md — ויקידאטה + ויקיפדיה]"]
+        }
       ]
     },
     {

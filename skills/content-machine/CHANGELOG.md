@@ -2,6 +2,8 @@
 
 היסטוריית גרסאות מלאה. הגרסה הנוכחית ושורת השינוי שלה בראש SKILL.md.
 
+> **v8.3 (Entity Disambiguation, 2026-08-06):** ישות `Brand` מקבלת `sameAs` לוויקידאטה ולוויקיפדיה מרישום מאומת (`pal-state/brand-entities.md`, 11 מותגים אומתו, השאר ממתינים). זה מקשר את המאמר לגרף הידע העולמי ומסיר ערפול. האימות חשף שלוש מלכודות: `Q48757454` הוא "Sharp — יצרן רובי אוויר"; לבוש ולסימנס כמותגי מוצרי חשמל אין ישות נפרדת והנכון הוא BSH; Constructa מופיעה כשני ערכים. `BRAND_SAMEAS_MISSING` (WARN) ו-`BRAND_SAMEAS_WRONG` (ERROR, קישור לתאגיד האם). pal-lint → v1.10.0, html-template → v7.10.
+
 > **v8.2 (קטלוג וידאו, 2026-08-06):** שלב 7 הפך לדטרמיניסטי. `youtube_pull.py` מושך את 126 הסרטונים משלושת הערוצים (properties של ערוצים אינם מוחזרים מ-Search Console API, לכן YouTube Data API), ו-`preflight` מחזיר ב-brief מזהה מאומת או `null`. ההתאמה דורשת פעולה משותפת + סוג מוצר משותף, אחרי שהגרסה הגסה הדביקה סרטון התקנה למאמר על קוד תקלה E15. `VIDEO_MISSING` ב-postflight מתריע כשקיים סרטון ולא הוטמע. בנוסף: `BRAND_HUB_MISSING` (ERROR) — כל מאמר חייב קישור ל-/brands/, כי עמודי השותפים קולטים 264K חשיפות ועמודי המותג שלנו על אפס.
 
 > **v8.1 (השלמת מיכון, 2026-08-03):** סריקת שלמות על 90 האמירות המחייבות בחמשת קבצי הסקיל. ארבעת פריטי השיפוט של v8.0 מוכנו: `CONTRAST_RATIO`, `NARRATIVE_MISSING`, `AUDIENCE_ANCHOR`, `INFO_GAIN_DIFF`. חמישה פערים שהסריקה חשפה נסגרו ב-pal-lint v1.8.0: `SUPERLATIVE`, `FOCUS_OUTLINE`, `PREF_STRIP_ORDER`, `PERMALINK_CASE`, `TERM_PLROM_NAME`. **93 כללים נאכפים, שתי הכרעות עורכיות נותרו.**
