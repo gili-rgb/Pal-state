@@ -380,6 +380,12 @@ def main():
     html = Path(a.file).read_text(encoding="utf-8")
     brief = json.loads(Path(a.brief).read_text(encoding="utf-8"))
 
+    if brief.get("degraded"):
+        err("DRAFT_BRIEF",
+            "ה-brief נוצר במצב DRAFT (--allow-degraded). חסרים: "
+            + ", ".join(brief.get("degraded_missing", []))
+            + ". הפעל את שרת ה-MCP והרץ preflight מחדש. אין פרסום.")
+
     run_pal_lint(a.site, a.file, a.keyword)
     check_topic(html, brief)
     check_terms(html, brief)

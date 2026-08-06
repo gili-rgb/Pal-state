@@ -529,15 +529,34 @@ def phase_plan(site):
     return 0
 
 
-def phase_finalize(site, mcp_path):
+REQUIRED_MCP = {
+    "live_blog_titles": "כותרות /blog/ החיות — שכבת הדדופ השלישית",
+    "products": "מוצרים לכרטיס Hero (permalink/מחיר/תמונה verbatim)",
+    "competitor_headings": "H2 של המתחרים — מזין את INFO_GAIN_DIFF",
+}
+
+
+def phase_finalize(site, mcp_path, allow_degraded=False):
     p = OUT / f"brief_partial_{site}.json"
     if not p.exists():
         die("brief_partial חסר. הרץ קודם --phase plan")
     brief = json.loads(p.read_text(encoding="utf-8"))
     mcp = json.loads(Path(mcp_path).read_text(encoding="utf-8"))
 
+    missing = [k for k in REQUIRED_MCP if not mcp.get(k)]
+    if missing:
+        lines = ["נתוני MCP חסרים ב-" + mcp_path + ":"]
+        lines += [f"   • {k} — {REQUIRED_MCP[k]}" for k in missing]
+        if not allow_degraded:
+            lines += ["",
+                      "השרת כנראה אינו פעיל. הפעל אותו והרץ שוב, או:",
+                      "   --allow-degraded  → טיוטה מסומנת DRAFT.",
+                      "                       postflight יחסום אותה. לא לפרסום."]
+            die("\n".join(lines))
+        print("⚠️  " + "\n⚠️  ".join(lines))
+        print("⚠️  מצב DRAFT: הפלט אינו בר-פרסום.")
     live = [t.strip() for t in mcp.get("live_blog_titles", []) if t.strip()]
-    if not live:
+    if not live and not allow_degraded:
         die("live_blog_titles ריק — שכבת הדדופ השלישית לא רצה")
     # v1.1 — תיקון באג קריטי (2026-08-04): הגרסה הקודמת חיברה את כל הכותרות
     # למחרוזת אחת וספרה מילים שמופיעות *איפשהו* בבלוב, בסף 2. באתר עם היסטוריה
@@ -599,6 +618,9 @@ def phase_finalize(site, mcp_path):
     brief["brand_hub"] = mcp.get("brand_hub")
     brief["verified_links"] = mcp.get("verified_links", [])
     brief["competitor_headings"] = mcp.get("competitor_headings", [])
+    brief["degraded"] = bool(missing)
+    if missing:
+        brief["degraded_missing"] = missing
     brief["dedup_layers"] = ["content-ledger", "GSC position", "live /blog/ titles"]
     if not brief["allowed_topics"]:
         die("כל הנושאים נפסלו בשכבת הכותרות החיות")
@@ -617,12 +639,14 @@ def main():
     ap.add_argument("--site", required=True, choices=list(SITES))
     ap.add_argument("--phase", required=True, choices=["plan", "finalize"])
     ap.add_argument("--mcp")
+    ap.add_argument("--allow-degraded", action="store_true",
+                    help="המשך בלי נתוני MCP. הפלט מסומן DRAFT ו-postflight חוסם אותו")
     a = ap.parse_args()
     if a.phase == "plan":
         return phase_plan(a.site)
     if not a.mcp:
         die("--mcp נדרש ב-finalize")
-    return phase_finalize(a.site, a.mcp)
+    return phase_finalize(a.site, a.mcp, a.allow_degraded)
 
 
 if __name__ == "__main__":
