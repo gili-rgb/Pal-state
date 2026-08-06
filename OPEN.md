@@ -1,41 +1,64 @@
 # OPEN — משימות פתוחות
-עודכן: 2026-07-07
+עודכן: 2026-08-06
 
-## audit content-machine (2026-07-05)
-- [ ] התקנת content-machine v7.15, brand-hub-machine v1.16, product-page-machine v7.1 (ZIPs נמסרו 2026-07-05; מחליפים את v7.13/v1.15)
-- [x] דחיפת pal-lint v1.0.0 (tools/) — בוצע 2026-07-05
-- [x] דחיפת pal-lint v1.1.0 (כיסוי מלא של חוסמי Elementor) — בוצע 2026-07-05
-- [x] content-machine v7.13 נוצר — בלוק ה-Elementor המוטמע נמחק, שלב 13 מריץ pal-lint בלבד. ZIP אצל גיל, ממתין להתקנה
-- [x] pal-lint v1.2.0: קליטת yoast_check / link_audit / schema_deep+WCAG + responsive/CTA/WAF-blog — בוצע 2026-07-05, selftest ירוק (12 fixtures)
-- [x] pal-lint v1.2.2: תיקון שני false-positives של כללי מותג (BRAND_BEKO תפס "בקושי"; DELONGHI_FRIDGE תפס "מקרר"+"דלונגי" מרשימת מותגים) — בוצע 2026-07-08, selftest ירוק. sha f2f94584d5c8
-- [x] pal-lint v1.3.0 (יישום אודיט הסקילים): ANCHOR_FORBIDDEN (ERROR) + ANCHOR_DUPLICATE/LINK_BUDGET/SPEAKABLE_MISSING (WARN) — בוצע 2026-07-08, selftest ירוק (13 fixtures). מוזג מעל v1.2.3, MAROM_PC_LINK נשמר.
-- [ ] בירור v7.10-v7.11: האם קיימות כ-ZIP מחוץ למותקן; אם כן — יישום השינויים שלהן מעל v7.13
-- [ ] פילוח חודשי ב-gsc pull (עונתיות) — הרחבת הסקריפט, ואז הסיגנל בשלב 2 נכנס לתוקף
-- [x] מילוי content-ledger.md רטרו: 123 פוסטים חיים (csb 53, marom 32, plrom 38) נשלפו מ-/blog/ דרך WooCommerce MCP get_page_html (מקור אמת חי, לא היסטוריה). בוצע 2026-07-08. תאריך+שאילתות יעד = "—" (לא ניתן לחילוץ מהאינדקס, לא הומצא). דגלים: פוסט מרום חי מזכיר Beko (#הסכם שירות), 4+ פוסטי אלקטרה בפלרום — legacy שסותר כללי מותג נוכחיים.
+סדר לפי ערך. חוסמים בראש. הארכיון של יולי בתחתית.
 
-## brand-hub-machine
-- [x] רטרו ל-5 עמודי מותג Marom (Haier, Blomberg, DeLonghi, Zanussi, Sharp→v1.16): offers חי מ-MCP + hex + מומחה מיכה איתן + לקחי v1.16. **הושלם 2026-07-08.**
-  - [x] Haier — הושלם 2026-07-07, pal-lint v1.2.0 ירוק, ווידג'ט נמסר
-  - [x] Blomberg / DeLonghi / Zanussi — הושלמו 2026-07-08 (הצינור חזר). Zanussi היה עדיין על var(--bh-*) והומר ל-hex
-  - [x] Sharp — הושלם 2026-07-08, רטרו v1.12→v1.16 (var→hex + persona), pal-lint v1.2.2 ירוק
-- [ ] פורward links: הגריד ב-5 העמודים מפנה ל-8 /brands/[brand]-service/ שעדיין 404 (kitchenaid/magimix/tefal/philips/moulinex/grundig/indesit/lavamat). גיל בונה בקרוב — לא לתקן ל-hubs חנות.
+---
 
-## תשתית — צינור MCP (חדש 2026-07-07)
-- [ ] **שורש ה-lockup: auto-restart supervisor על תהליך stdio של WooCommerce MCP.** נפל 3× בשיחה אחת אחרי רצף check_url; לא קם עם reconnect ידני. הפעלה ידנית חוזרת = טיפול בסימפטום. צריך health-check שמזהה ניתוק ומרים מחדש, או wrapper עם restart-on-crash.
-- [ ] באג check_url: קורס על נתיב עברי raw — `UnicodeEncodeError: 'ascii' codec` על נתיב עם תווים לא-ASCII. צריך urllib.parse.quote בשרת לפני הבקשה. עוקף כרגע ידנית עם percent-encoding.
-- [ ] check_url חוסם subdomain: myarea.marom-serv.co.il מחזיר "דומיין מחוץ לאתרי Pal Group". ה-CTA הראשי בכל עמודי המותג (הזמנת טכנאי) לא ניתן לאימות דרך הכלי. להוסיף subdomains של האתרים לאלואוליסט.
+## חוסם
 
-## Maya
-- [ ] A/B test על וריאנטים של opening script
-- [ ] שיפורי hebrew_pronunciation.py
-- [ ] Israeli-accent voice cloning דרך HeyGen
+- [ ] **ריצת אימות ראשונה על ארכיטקטורת v8.** שיחה חדשה, "בלוג למרום" בלי נושא. כל מה שנבנה ב-2026-08-03 עד 08-06 לא נבדק מקצה לקצה בריצה אמיתית. דורש שרת WooCommerce MCP פעיל (רץ במחשב נפרד).
+  - סימנים לאמת: אפס בקשות אישור | preflight רץ plan ואז finalize | הנושא מ-`allowed_topics` | קישור ל-/brands/ | וידאו מה-brief או בלוק מחוק | postflight exit 0 | דוח מציג pal-lint v1.10.0
 
-## תשתית / ממשק
-- [x] changelog בראש כל SKILL — בוצע (כל שלושת הסקילים, 2026-07-05)
-- [ ] מחיקת סקיל global-notes מההתקנה של גיל (זומבי; pal-state + הזיכרון המובנה החליפו)
-- [ ] הכרעה: האם לאסור "חיקוי" גם ב-brand-hub (כרגע ERROR רק ב-product; תבנית brand-hub משתמשת "מקורי מול חיקוי")
-- [ ] שקילת VALIDATE כ-script עצמאי שרץ לפני כל submit (לא רק כצעד ב-SKILL)
-- [ ] טריגר בזיכרון המובנה: "בתחילת כל משימה לא-טריוויאלית קרא pal-state"
+---
 
-## GBP אוטומציה
-- [ ] ממתין לאישור מכסת Google API (ארכיטקטורה Python/FastAPI מתוכננת)
+## תשתית — פערים ידועים
+
+- [ ] **`INFO_GAIN_DIFF` בלי מקור.** preflight מבקש `competitor_headings` ואף שלב לא מייצר אותם. הכלל מזהיר "אין מיפוי" בכל ריצה.
+- [ ] **preflight נופל בשקט כשה-MCP לא זמין.** נדרשת בדיקת זמינות + `--allow-degraded` לטיוטה מסומנת DRAFT.
+- [ ] **Bing כמקור הזדמנויות שלישי.** autocomplete חובר (43 → 351 נושאים). `bing_customer_language.md` עדיין לא נקרא.
+- [ ] **בדיקת קניבליזציה בין-אתרית.** הדאטה מוכן. ממצא ודאי: עמוד מדיח בלומברג במרום מדורג על "קודי תקלות במדיח מילה" — מותג של פלרום.
+- [ ] **9 מותגים לא מאומתים** ב-brand-entities.md: בלומברג, קיטשן אייד, ברוויל, טפאל, מולינקס, פיליפס, ליבהר, נף, באוקנכט. סאוטר כנראה יישאר בחוץ.
+- [ ] **ערוצי יוטיוב ב-Search Console.** ה-service account שותף, אבל sites.list מחזיר שלושה properties של אתרים בלבד — סוג ה-property אינו נתמך ב-API. עוקף: YouTube Data API (בוצע). זמן צפייה ושימור דורשים YouTube Analytics API + OAuth.
+
+---
+
+## סקילים שנשארו מאחור
+
+- [ ] **brand-hub-machine v1.17 לא מכיר את ארכיטקטורת v8.** אין preflight/postflight, אין BRAND_SAMEAS, אין קטלוג וידאו. **דחוף** — המשימה הבאה (עמודי מותג לפלרום) רצה דרכו.
+- [ ] **product-page-machine v7.0** — אותו פער.
+
+---
+
+## תוכן ואסטרטגיה
+
+- [ ] **פלרום: אפס עמודי מותג.** `/miele-service/` של השותף קולט כ-21,000 חשיפות חודשיות. ההזדמנות הגדולה ביותר הפתוחה. מותגים: מילה, ליבהר, סאוטר, פיליפס, ברוויל.
+- [ ] **4 עמודי CSB על אפס חשיפות.** קישורי התפריט הוסרו, ולכן הם כמעט מבודדים.
+- [ ] **6 עמודי מרום על אפס:** moulinex, kitchenaid, magimix, grundig, indesit.
+- [ ] **52 מאמרים בלדג'ר עם סרטון תואם** שלא מטמיעים אותו.
+- [ ] **104 עמודים בתור Refresh.** הכיוון סוכם, אין תהליך מוגדר.
+- [ ] **תמהיל 6 בשבוע** (CSB 0+2, מרום 1+1, פלרום 1+1) — סוכם, לא נכנס לסקיל.
+- [ ] **עמודים עונתיים בלי דירוג:** פסח 2025, שבועות, עוגת גבינה.
+- [ ] **תוכן ברוסית.** עמודי /ru/ ו-/en/, וסרטון רוסי עם 26,042 צפיות.
+- [ ] **ai-visibility-audit ו-off-site-radar** — baseline מ-2026-07-08, לא נמדדו מחדש.
+
+---
+
+## הושלם 2026-08-03 עד 08-06
+
+- [x] content-machine v7.17 → **v8.3**. שלב 0 = preflight, שלב 13 = postflight, צ'קליסט 30 → 2
+- [x] pal-lint v1.3.0 → **v1.10.0**. 96 כללים, 19 fixtures
+- [x] preflight.py, postflight.py, ledger_lint.py, version_guard.py, test_flight.py
+- [x] CI ב-Pal-state: 4 שערים על כל push
+- [x] gsc_page_queries.py + גיבוי 111/123 שורות ledger משאילתות GSC אמיתיות
+- [x] youtube_pull.py + 126 סרטונים + התאמה מחמירה ל-brief
+- [x] autocomplete כמקור הזדמנויות: 43 → 351 נושאים
+- [x] rebase+retry בארבעת ה-workflows ב-pal-gsc-data
+- [x] brand-entities.md — 11 מותגים מאומתים
+- [x] קבצי הסקיל עברו לריפו תחת skills/content-machine/ — מקור אמת יחיד
+
+---
+
+## ארכיון יולי 2026
+
+הפריטים של יולי (audit content-machine, brand-hub, צינור MCP, Maya, GBP) הועברו ל-OPEN-archive-2026-07.md.
