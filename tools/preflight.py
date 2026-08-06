@@ -299,6 +299,29 @@ def load_autocomplete(site, blog_urls, pages, ledger):
     return out
 
 
+def discover_brand_hubs(pages):
+    """
+    v1.3: רישום עמודי המותג הקיימים + מצב החשיפות שלהם.
+    הרקע (2026-08-06): עמודי /brands/ של CSB פורסמו ביולי ועמדו על אפס חשיפות,
+    בעוד עמודי השותפים בשורש קלטו 264K. הכלי לא ראה אותם כלל ודיווח "אין עמוד",
+    ולכן דיווח שגוי. מעכשיו הם ב-brief, גם כשהחשיפות אפס — במיוחד אז.
+    """
+    hubs = {}
+    for url, qs in pages.items():
+        if "/brands/" not in url:
+            continue
+        base = url.split("#")[0].rstrip("/")
+        if base.endswith("/brands"):
+            continue
+        h = hubs.setdefault(base, {"url": base, "impressions": 0, "clicks": 0})
+        h["impressions"] += sum(q["impressions"] for q in qs)
+        h["clicks"] += sum(q["clicks"] for q in qs)
+    out = sorted(hubs.values(), key=lambda h: -h["impressions"])
+    for h in out:
+        h["status"] = "פעיל" if h["impressions"] >= 100 else "אפס תנועה — דורש הזנת קישורים"
+    return out
+
+
 def phase_plan(site):
     OUT.mkdir(exist_ok=True)
     lint = load_lint_version()
@@ -306,6 +329,7 @@ def phase_plan(site):
     pages = load_page_queries(site)
     vocab = build_vocabulary(pages, site)
     blog_urls = {r["url"] for r in ledger}
+    brand_hubs = discover_brand_hubs(pages)
     opps = opportunities(pages, ledger, blog_urls, site, limit=150)
     for o in opps:
         o.setdefault("source", "gsc")
@@ -331,6 +355,8 @@ def phase_plan(site):
         "allowed_topics": allowed,
         "refresh_queue": refresh,
         "brand_hub_gaps": hub_gaps,
+        "brand_hubs": brand_hubs,        # עמודי המותג הקיימים — חובה לקשר אליהם
+        "brand_hub_link_rule": "כל מאמר חייב לפחות קישור אחד ל-/brands/ (BRAND_HUB_MISSING)",
         "canonical_sentences": canonical_sentences(site),
         "h1_variants": h1_variant(pages, allowed[0]["query"]) if allowed else [],
         "mcp_requests": [
@@ -358,6 +384,15 @@ def phase_plan(site):
             print(f"   GSC  | {o['impressions']:6d} חשיפות | pos {o['best_position']:5.1f} | {o['query'][:48]}")
         else:
             print(f"   AC   | {'—':>6s}          | {o.get('brand',''):10s} | {o['query'][:48]}")
+    live_h = [h for h in brand_hubs if h["impressions"] >= 100]
+    dead_h = [h for h in brand_hubs if h["impressions"] < 100]
+    print(f"\n🔗 עמודי מותג קיימים ({len(brand_hubs)}): {len(live_h)} עם תנועה, "
+          f"{len(dead_h)} על אפס")
+    for h in brand_hubs[:5]:
+        print(f"   {h['impressions']:6d} חשיפות | {h['url'].split('.co.il')[-1][:38]}")
+    if dead_h:
+        print(f"   ⚠️  דורשים הזנת קישורים: "
+              + ", ".join(h["url"].split("/brands/")[-1].rstrip("/") for h in dead_h[:6]))
     print(f"\n🏷️  פערי brand hub ({len(hub_gaps)}) — לא נושא בלוג:")
     for o in hub_gaps[:4]:
         print(f"   {o['impressions']:6d} | {o['query'][:45]}")

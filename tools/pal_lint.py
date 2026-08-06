@@ -32,7 +32,12 @@ from pathlib import Path
 #  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
 #  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
 #  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
-VERSION = "1.8.0"
+VERSION = "1.9.0"
+# v1.9.0 (2026-08-06): BRAND_HUB_MISSING (ERROR, blog) — כל מאמר חייב קישור אחד לפחות
+#   ל-/brands/. הרקע: עמודי השותפים בשורש (/bosch-service/ 178K חשיפות,
+#   /siemens-service/ 86K) קולטים את שאילתות המותג, בעוד עמודי המותג שלנו תחת
+#   /brands/ עומדים על אפס. 301 אינו אפשרי מסיבות עסקיות, ולכן הערוץ היחיד
+#   להעברת סמכות הוא קישורים פנימיים מכל תוכן חדש.
 # v1.8.0 (2026-08-03, סריקת שלמות: 90 אמירות מחייבות בקבצי הסקיל מופו למנגנון אוכף.
 #   חמישה פערים אמיתיים נסגרו):
 #   SUPERLATIVE (ERROR)      — שיווקיות אסורה ממאסטר-פרומפט ("מוביל", "מהפכני", "הטוב ביותר")
@@ -752,6 +757,21 @@ def check_h1_listicle(html, rep, doc_type):
             return
 
 
+def check_brand_hub_link(html, rep, site, doc_type):
+    """v1.9.0: כל מאמר בלוג מזין את עמודי המותג שלנו, לא את עמודי השותפים."""
+    if doc_type != "blog" or not site:
+        return
+    dom = SITES[site]["domain"]
+    hubs = [u for u in re.findall(r'href="([^"]+)"', html)
+            if "/brands/" in u.lower() and (dom in u or u.startswith("/brands/"))]
+    if not hubs:
+        rep.err("BRAND_HUB_MISSING",
+                "אין קישור לעמוד מותג תחת /brands/. חובה אחד לפחות — "
+                "זה הערוץ להעברת סמכות מעמודי השותפים אלינו")
+    else:
+        rep.note(f"קישורי brand hub: {len(hubs)}")
+
+
 def check_bauknecht(html, rep, doc_type):
     """v1.6.1: כתיב מותג שגוי שמקורו בעמוד שירות ישן."""
     if re.search(heb_bound("באוכנט"), visible_text(html)):
@@ -797,6 +817,7 @@ def run(path, site=None, doc_type=None, keyword=None):
     check_sources_internal(html, rep, doc_type)
     check_competitor_sources(html, rep, doc_type)
     check_bauknecht(html, rep, doc_type)
+    check_brand_hub_link(html, rep, site, doc_type)
     check_h1_listicle(html, rep, doc_type)
     check_plrom_name(html, rep, site, doc_type)
     check_superlatives(html, rep, doc_type)
