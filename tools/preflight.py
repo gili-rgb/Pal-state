@@ -322,6 +322,125 @@ def discover_brand_hubs(pages):
     return out
 
 
+def load_video_catalog(site):
+    """
+    v1.4: קטלוג הסרטונים של הערוץ (youtube_pull.py).
+    properties של ערוצי יוטיוב אינם מוחזרים מ-sites.list ב-Search Console
+    (אומת 2026-08-06), ולכן YouTube Data API הוא המקור.
+    """
+    f = GSC / "youtube_catalog.json"
+    if not f.exists():
+        return []
+    return json.load(open(f, encoding="utf-8")).get(site, {}).get("videos", [])
+
+
+# שמות מוצר ומותג. חפיפה בהם בלבד אינה מעידה על התאמה נושאית.
+APPLIANCE_TOKENS = {
+    "מדיח", "כלים", "כביסה", "מכונה", "מקרר", "תנור", "מייבש", "כיריים",
+    "מיקרוגל", "מיקסר", "קפה", "שואב", "אבק", "קולט", "אדים", "מקפיא",
+    "בלנדר", "מעבד", "מזון", "מגהץ",
+}
+
+BRAND_TOKENS = {
+    "בוש", "סימנס", "קונסטרוקטה", "גגנאו", "שארפ", "בלומברג", "האייר",
+    "זנוסי", "דלונגי", "מילה", "ליבהר", "סאוטר", "פיליפס", "ברוויל",
+    "טפאל", "מולינקס", "אלקטרה", "טושיבה", "וירפול", "מגימיקס",
+}
+
+ENTITY_TOKENS = APPLIANCE_TOKENS | BRAND_TOKENS
+
+# טוקני פעולה. חפיפה באחד מהם היא התנאי להתאמה — שם מוצר ומותג אינם מספיקים.
+ACTION_TOKENS = {
+    "ניקוי", "לנקות", "פילטר", "מסנן", "מסננים", "התקנה", "התקנת", "להתקין", "פירוק",
+    "הרכבה", "נזילה", "נזילות", "דולף", "שבת", "מנגנון", "כשרות", "תקלה",
+    "תקלות", "קוד", "שגיאה", "החלפה", "להחליף", "החלפת", "איפוס", "לאפס",
+    "הפעלה", "להפעיל", "נעילה", "ילדים", "ריח", "אבנית", "מלח", "אטם", "גומי",
+    "תוף", "משאבה", "ניקוז", "צינור", "ברגי", "ריתום", "תחזוקה", "הובלה", "רעש", "מרעישה", "חימום", "מחמם", "סחיטה",
+    "תוכנית", "סלסלה", "מגירה", "מגירת", "ירקות", "זרוע", "התזה", "אינדוקציה", "טיימר",
+}
+
+VID_STOP = {"סרטון", "הדרכה", "הוראות", "מדריך", "שירות", "מרום", "אחזקה",
+            "שירותים", "הסבר", "לכל", "הדגמים", "עצמית", "בעצמך"}
+
+
+def _vnorm(w):
+    # "כ" כתחילית נדירה בעברית ושוברת מילים לגיטימיות ("כיריים" → "יריים").
+    for pre in ("וה", "שה", "בה", "לה", "מה", "כש", "ה", "ו", "ב", "ל", "מ", "ש"):
+        if w.startswith(pre) and len(w) - len(pre) >= 3:
+            w = w[len(pre):]
+            break
+    for suf in ("יות", "ים", "ות", "י"):
+        if w.endswith(suf) and len(w) - len(suf) >= 3:
+            return w[: -len(suf)]
+    return w
+
+
+def _vsame(a, b):
+    """
+    השוואה דו-כיוונית ולא נרמול לחלל משותף.
+    נרמול חד-כיווני מייצר גזעים לא עקביים: "מקרר" הופך ל"קרר" אבל "למקררי"
+    הופך ל"מקררי", והשניים לא נפגשים. זה אותו באג שתוקן בשכבת הדדופ.
+    """
+    return a == b or _vnorm(a) == b or a == _vnorm(b) or _vnorm(a) == _vnorm(b)
+
+
+def _vsig(text):
+    """טוקנים גולמיים. מילות מסגרת כמו "סרטון"/"מדריך" אינן מזהות נושא."""
+    return [w for w in re.findall(r"[\u0590-\u05FFA-Za-z0-9]{3,}", text)
+            if w not in VID_STOP and _vnorm(w) not in VID_STOP]
+
+
+def _hits(qs, ts):
+    return [a for a in qs if any(_vsame(a, b) for b in ts)]
+
+
+def _in_set(tok, pool):
+    return any(_vsame(tok, x) for x in pool)
+
+
+def match_video(query, videos):
+    """
+    התאמת סרטון לנושא. שלושה תנאים מצטברים, כולם נדרשים:
+      1. לפחות 2 טוקנים משותפים, וכיסוי 60% מטוקני השאילתה
+      2. טוקן פעולה משותף (ניקוי/תקלה/שבת/החלפה...) — לא רק שם מוצר
+      3. סוג מוצר משותף — לא רק מותג
+    סרטון לא רלוונטי גרוע מאין סרטון. ההתאמה הגסה הדביקה סרטון התקנה
+    למאמר על קוד תקלה E15 רק בזכות "מדיח כלים בוש".
+    """
+    qs = _vsig(query)
+    if len(qs) < 2:
+        return None
+    best = None
+    for v in videos:
+        ts = _vsig(v["title"])
+        hits = _hits(qs, ts)
+        if len(hits) < 2:
+            continue
+        # כותרות סרטונים כמעט לא מכילות שם מותג, ולכן מותג במכנה מנפח
+        # את הדרישה ומייצר החמצות. הוא עדיין נספר כהתאמה במונה.
+        denom = [t for t in qs if not _in_set(t, BRAND_TOKENS)] or qs
+        cover = len([h for h in hits if not _in_set(h, BRAND_TOKENS)]) / len(denom)
+        # 0.5 ולא 0.6: שערי הפעולה והמוצר עושים את העבודה האמיתית,
+        # וסף כיסוי גבוה מדי ייצר החמצות על שאילתות ארוכות.
+        if cover < 0.5:
+            continue
+        if not any(_in_set(h, ACTION_TOKENS) for h in hits):
+            continue
+        if not any(_in_set(h, APPLIANCE_TOKENS) for h in hits):
+            continue
+        tags = _vsig(" ".join(v.get("tags", [])))
+        score = len(hits) + 0.5 * len(_hits(qs, tags))
+        cand = (score, cover, v.get("views", 0))
+        if best is None or cand > best[0]:
+            best = (cand, v, cover)
+    if not best:
+        return None
+    _, v, cover = best
+    return {"video_id": v["video_id"], "title": v["title"], "embed": v["embed"],
+            "views": v.get("views", 0), "published": v.get("published", ""),
+            "coverage": round(cover, 2)}
+
+
 def phase_plan(site):
     OUT.mkdir(exist_ok=True)
     lint = load_lint_version()
@@ -330,6 +449,7 @@ def phase_plan(site):
     vocab = build_vocabulary(pages, site)
     blog_urls = {r["url"] for r in ledger}
     brand_hubs = discover_brand_hubs(pages)
+    videos = load_video_catalog(site)
     opps = opportunities(pages, ledger, blog_urls, site, limit=150)
     for o in opps:
         o.setdefault("source", "gsc")
@@ -342,6 +462,10 @@ def phase_plan(site):
 
     if not allowed and not refresh:
         die("רשימת הנושאים המותרים ריקה. אין הזדמנות שעוברת את השערים")
+
+    for o in allowed:
+        o["video"] = match_video(o["query"], videos)
+    n_vid = sum(1 for o in allowed if o["video"])
 
     brief = {
         "site": site, "domain": SITES[site],
@@ -356,6 +480,7 @@ def phase_plan(site):
         "refresh_queue": refresh,
         "brand_hub_gaps": hub_gaps,
         "brand_hubs": brand_hubs,        # עמודי המותג הקיימים — חובה לקשר אליהם
+        "video_catalog_size": len(videos),
         "brand_hub_link_rule": "כל מאמר חייב לפחות קישור אחד ל-/brands/ (BRAND_HUB_MISSING)",
         "canonical_sentences": canonical_sentences(site),
         "h1_variants": h1_variant(pages, allowed[0]["query"]) if allowed else [],
@@ -379,6 +504,7 @@ def phase_plan(site):
     n_gsc = sum(1 for o in allowed if o["source"] == "gsc")
     n_ac = len(allowed) - n_gsc
     print(f"\n📋 נושאים מותרים ({len(allowed)}): {n_gsc} מ-GSC, {n_ac} יהלומי autocomplete")
+    print(f"   🎬 {n_vid} מהם עם סרטון מאומת מהערוץ ({len(videos)} בקטלוג)")
     for o in allowed[:8]:
         if o["source"] == "gsc":
             print(f"   GSC  | {o['impressions']:6d} חשיפות | pos {o['best_position']:5.1f} | {o['query'][:48]}")
