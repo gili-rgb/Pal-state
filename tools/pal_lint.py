@@ -32,7 +32,7 @@ from pathlib import Path
 #  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
 #  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
 #  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
-VERSION = "1.10.0"
+VERSION = "1.10.1"
 # v1.10.0 (2026-08-06): BRAND_SAMEAS_MISSING (WARN) — קישור לגרף הידע העולמי.
 #   ישות Brand ב-@graph של מותג שנמצא ב-brand-entities.md חייבת sameAs.
 #   הרישום מאומת ידנית; מותג שאינו בו אינו מעורר אזהרה. QID שגוי גרוע מחסר —
@@ -773,6 +773,14 @@ BRAND_ENTITIES = {
     "זנוסי": ["wiki/Zanussi"],
     "בוש": ["Q614920", "BSH_Hausger"],
     "סימנס": ["Q614920", "BSH_Hausger"],
+    "נף": ["Q326933", "Neff_GmbH"],
+    "קיטשן אייד": ["Q1743850", "wiki/KitchenAid"],
+    "קיצ'נאייד": ["Q1743850", "wiki/KitchenAid"],
+    "באוקנכט": ["Q467116", "Bauknecht"],
+    "בלומברג": ["Q884951", "Blomberg"],
+    "טפאל": ["wiki/Tefal"],
+    "מולינקס": ["wiki/Moulinex"],
+    "ברוויל": ["Breville_Group"],
 }
 
 
