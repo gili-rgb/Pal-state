@@ -255,6 +255,50 @@ def canonical_sentences(site):
     return out
 
 
+SITE_HEADING = {"csb": "CSB", "marom": "Marom", "plrom": "Plrom"}
+
+
+def load_autocomplete(site, blog_urls, pages, ledger):
+    """
+    מקור הזדמנויות שני (v1.2). GSC מראה רק שאילתות שכבר יש לנו עליהן חשיפות,
+    ולכן אוקיינוס כחול — ביקוש שאיננו נוכחים בו כלל — בלתי נראה לו לחלוטין.
+    autocomplete_customer_language.md מחזיק 1,054 "יהלומים": הצעות של גוגל
+    שאינן מופיעות ב-GSC. זה מה שהופך מלאי של 7 שבועות למלאי של 60.
+    """
+    f = GSC / "autocomplete_customer_language.md"
+    if not f.exists():
+        return []
+    want = SITE_HEADING[site]
+    cur_site = cur_brand = None
+    gems = []
+    for ln in f.read_text(encoding="utf-8").split("\n"):
+        if ln.startswith("## "):
+            cur_site = ln[3:].strip()
+        elif ln.startswith("### "):
+            cur_brand = ln[4:].strip()
+        elif ln.startswith("- ") and cur_site == want and cur_brand:
+            gems.append((ln[2:].strip(), cur_brand))
+
+    covered = {q.lower() for r in ledger for q in r["queries"]}
+    out = []
+    for q, brand in gems:
+        if len(q) < 8 or q.lower() in covered:
+            continue
+        if is_navigational(q, site) or is_excluded_brand(q, site):
+            continue
+        if classify(q) != "blog":
+            continue
+        # אם כבר יש לנו מאמר בלוג שמדורג על זה, זה Refresh ולא הזדמנות חדשה
+        hit = rank_for_query(pages, q, scope=blog_urls)
+        if hit and hit[1] <= RANK_HELD:
+            continue
+        out.append({"query": q, "kind": "blog", "brand": brand,
+                    "impressions": 0, "clicks": 0, "best_position": None,
+                    "verdict": "NEW", "source": "autocomplete",
+                    "reason": "יהלום autocomplete — ביקוש שאיננו נוכחים בו ב-GSC כלל"})
+    return out
+
+
 def phase_plan(site):
     OUT.mkdir(exist_ok=True)
     lint = load_lint_version()
@@ -263,7 +307,12 @@ def phase_plan(site):
     vocab = build_vocabulary(pages, site)
     blog_urls = {r["url"] for r in ledger}
     opps = opportunities(pages, ledger, blog_urls, site, limit=150)
+    for o in opps:
+        o.setdefault("source", "gsc")
     allowed = [o for o in opps if o["verdict"] == "NEW" and o["kind"] == "blog"]
+    gems = load_autocomplete(site, blog_urls, pages, ledger)
+    seen = {o["query"].lower() for o in allowed}
+    allowed += [g for g in gems if g["query"].lower() not in seen]
     refresh = [o for o in opps if o["verdict"] == "REFRESH"]
     hub_gaps = [o for o in opps if o["kind"] == "brandhub"][:10]
 
@@ -301,9 +350,14 @@ def phase_plan(site):
 
     print(f"✅ preflight plan | {site} | pal-lint {lint} | {len(ledger)} שורות ledger | "
           f"{len(pages)} עמודים | אוצר מילים {len(vocab)}")
-    print(f"\n📋 נושאים מותרים ({len(allowed)}):")
-    for o in allowed[:10]:
-        print(f"   {o['impressions']:6d} חשיפות | pos {o['best_position']:5.1f} | {o['query'][:55]}")
+    n_gsc = sum(1 for o in allowed if o["source"] == "gsc")
+    n_ac = len(allowed) - n_gsc
+    print(f"\n📋 נושאים מותרים ({len(allowed)}): {n_gsc} מ-GSC, {n_ac} יהלומי autocomplete")
+    for o in allowed[:8]:
+        if o["source"] == "gsc":
+            print(f"   GSC  | {o['impressions']:6d} חשיפות | pos {o['best_position']:5.1f} | {o['query'][:48]}")
+        else:
+            print(f"   AC   | {'—':>6s}          | {o.get('brand',''):10s} | {o['query'][:48]}")
     print(f"\n🏷️  פערי brand hub ({len(hub_gaps)}) — לא נושא בלוג:")
     for o in hub_gaps[:4]:
         print(f"   {o['impressions']:6d} | {o['query'][:45]}")
