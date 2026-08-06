@@ -32,7 +32,11 @@ from pathlib import Path
 #  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
 #  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
 #  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
-VERSION = "1.9.0"
+VERSION = "1.10.0"
+# v1.10.0 (2026-08-06): BRAND_SAMEAS_MISSING (WARN) — קישור לגרף הידע העולמי.
+#   ישות Brand ב-@graph של מותג שנמצא ב-brand-entities.md חייבת sameAs.
+#   הרישום מאומת ידנית; מותג שאינו בו אינו מעורר אזהרה. QID שגוי גרוע מחסר —
+#   ל-"Sharp" קיימות שלוש ישויות בוויקידאטה, אחת מהן יצרן רובי אוויר.
 # v1.9.0 (2026-08-06): BRAND_HUB_MISSING (ERROR, blog) — כל מאמר חייב קישור אחד לפחות
 #   ל-/brands/. הרקע: עמודי השותפים בשורש (/bosch-service/ 178K חשיפות,
 #   /siemens-service/ 86K) קולטים את שאילתות המותג, בעוד עמודי המותג שלנו תחת
@@ -757,6 +761,43 @@ def check_h1_listicle(html, rep, doc_type):
             return
 
 
+BRAND_ENTITIES = {
+    "שארפ": ["Q53227", "Sharp_Corporation"],
+    "מילה": ["Q695230", "wiki/Miele"],
+    "קונסטרוקטה": ["Q326933", "Constructa"],
+    "מג'ימיקס": ["Q3276973", "wiki/Magimix"],
+    "מגימיקס": ["Q3276973", "wiki/Magimix"],
+    "גגנאו": ["Gaggenau_Hausger"],
+    "דלונגי": ["De%27_Longhi", "De'_Longhi"],
+    "האייר": ["wiki/Haier"],
+    "זנוסי": ["wiki/Zanussi"],
+    "בוש": ["Q614920", "BSH_Hausger"],
+    "סימנס": ["Q614920", "BSH_Hausger"],
+}
+
+
+def check_brand_sameas(html, rep, doc_type):
+    """v1.10.0: Entity Disambiguation. הרישום המאומת: pal-state/brand-entities.md."""
+    if doc_type == "product":
+        return
+    for m in re.finditer(r'\{[^{}]*"@type":\s*"Brand".*?\}', html, flags=re.S):
+        blk = m.group()
+        nm = re.search(r'"name":\s*"([^"]+)"', blk)
+        if not nm:
+            continue
+        brand = nm.group(1).strip()
+        keys = BRAND_ENTITIES.get(brand)
+        if not keys:
+            continue
+        if not any(k in blk for k in keys):
+            rep.warn("BRAND_SAMEAS_MISSING",
+                     f'ישות Brand "{brand}" בלי sameAs לגרף הידע. '
+                     f'ראה pal-state/brand-entities.md')
+        if brand in ("בוש", "סימנס") and re.search(r"Robert_Bosch_GmbH|wiki/Siemens\b", blk):
+            rep.err("BRAND_SAMEAS_WRONG",
+                    f'"{brand}" מקושר לתאגיד האם ולא ליצרן מוצרי החשמל. הנכון: BSH (Q614920)')
+
+
 def check_brand_hub_link(html, rep, site, doc_type):
     """v1.9.0: כל מאמר בלוג מזין את עמודי המותג שלנו, לא את עמודי השותפים."""
     if doc_type != "blog" or not site:
@@ -818,6 +859,7 @@ def run(path, site=None, doc_type=None, keyword=None):
     check_competitor_sources(html, rep, doc_type)
     check_bauknecht(html, rep, doc_type)
     check_brand_hub_link(html, rep, site, doc_type)
+    check_brand_sameas(html, rep, doc_type)
     check_h1_listicle(html, rep, doc_type)
     check_plrom_name(html, rep, site, doc_type)
     check_superlatives(html, rep, doc_type)
