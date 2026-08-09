@@ -299,7 +299,32 @@ def load_autocomplete(site, blog_urls, pages, ledger):
     return out
 
 
-def discover_brand_hubs(pages):
+def brand_hubs_from_ledger(site):
+    """
+    סעיף ה-brand hub בלדג'ר בפורמט נפרד: נתיב יחסי, בלי דומיין.
+    load_ledger מסנן לפי דומיין ולכן מפספס אותו, וכך preflight דיווח
+    "אין עמוד מותג" על ארבעה עמודים שנבנו ביולי (נצפה 2026-08-09).
+    """
+    f = STATE / "content-ledger.md"
+    if not f.exists():
+        return []
+    dom = SITES[site]
+    out = []
+    for ln in f.read_text(encoding="utf-8").split("\n"):
+        if not ln.startswith("|") or "/brands/" not in ln:
+            continue
+        cells = [c.strip() for c in ln.strip("|").split("|")]
+        path = next((c for c in cells if c.startswith("/brands/")), None)
+        if not path:
+            continue
+        alias = next((c for c in cells if c in SITES), None)
+        if alias and SITES[alias] != dom:
+            continue
+        out.append(dom + path.rstrip("/"))
+    return out
+
+
+def discover_brand_hubs(pages, ledger_hubs=None):
     """
     v1.3: רישום עמודי המותג הקיימים + מצב החשיפות שלהם.
     הרקע (2026-08-06): עמודי /brands/ של CSB פורסמו ביולי ועמדו על אפס חשיפות,
@@ -316,6 +341,11 @@ def discover_brand_hubs(pages):
         h = hubs.setdefault(base, {"url": base, "impressions": 0, "clicks": 0})
         h["impressions"] += sum(q["impressions"] for q in qs)
         h["clicks"] += sum(q["clicks"] for q in qs)
+    # עמוד מותג עם אפס חשיפות אינו קיים בדאטת GSC, ולכן דווח "אין עמוד"
+    # על עמודים שנבנו ביולי (נצפה 2026-08-09). הלדג'ר הוא המקור המשלים.
+    for u in (ledger_hubs or []):
+        if u not in hubs:
+            hubs[u] = {"url": u, "impressions": 0, "clicks": 0}
     out = sorted(hubs.values(), key=lambda h: -h["impressions"])
     for h in out:
         h["status"] = "פעיל" if h["impressions"] >= 100 else "אפס תנועה — דורש הזנת קישורים"
@@ -496,7 +526,7 @@ def phase_plan(site):
     pages = load_page_queries(site)
     vocab = build_vocabulary(pages, site)
     blog_urls = {r["url"] for r in ledger}
-    brand_hubs = discover_brand_hubs(pages)
+    brand_hubs = discover_brand_hubs(pages, brand_hubs_from_ledger(site))
     videos = load_video_catalog(site)
     opps = opportunities(pages, ledger, blog_urls, site, limit=150)
     for o in opps:

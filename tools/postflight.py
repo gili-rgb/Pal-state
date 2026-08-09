@@ -189,10 +189,28 @@ def check_hero(html, brief):
     if not products:
         err("HERO_MISMATCH", "יש כרטיס Hero אבל ה-brief ריק ממוצרים")
         return
-    match = next((p for p in products if p.get("permalink", "").rstrip("/") == href.rstrip("/")), None)
+    def _slug(u):
+        import urllib.parse as _u
+        return _u.unquote(u).rstrip("/").split("/")[-1]
+
+    match = next((p for p in products
+                  if p.get("permalink", "").rstrip("/") == href.rstrip("/")), None)
     if not match:
-        err("HERO_MISMATCH", f"permalink בכרטיס אינו מופיע ב-brief: {href[:70]}")
-        return
+        # search_products ו-get_product_by_sku מחזירים permalink שונה לאותו
+        # מק"ט: אחד מהם חתוך בתו אחד (נצפה 2026-08-09, SKU 00365039 —
+        # "...סימנ" במקום "...סימנס"). הגרסה החתוכה היא זו שמחזירה 200.
+        hs = _slug(href)
+        near = [p for p in products
+                if _slug(p.get("permalink", "")).startswith(hs[:-2])
+                or hs.startswith(_slug(p.get("permalink", ""))[:-2])]
+        if near:
+            match = near[0]
+            warn("HERO_SLUG_DRIFT",
+                 f"ה-slug בכרטיס שונה מה-brief בתו או שניים. אמת ב-check_url "
+                 f"איזה מחזיר 200 והשתמש בו verbatim. בכרטיס: {hs[:45]}")
+        else:
+            err("HERO_MISMATCH", f"permalink בכרטיס אינו מופיע ב-brief: {href[:70]}")
+            return
     img = re.search(r'class="product-card-img" src="([^"]+)"', card)
     if img and match.get("image") and img.group(1) != match["image"]:
         err("HERO_MISMATCH", "URL התמונה אינו זהה למה שחזר מ-MCP")
@@ -333,33 +351,77 @@ def contrast(fg, bg):
     return round((hi + 0.05) / (lo + 0.05), 2)
 
 
+def _bg_map(style):
+    """
+    מפת רקעים לפי סלקטור. הבסיס לפתרון ירושה.
+    ".cta-box{background:#140C3C}" קובע את הרקע לכל צאצא שלו.
+    """
+    out = {}
+    for m in re.finditer(r"([^{}]+)\{([^{}]*)\}", style):
+        bg = re.search(r"background(?:-color)?:\s*(#[0-9a-fA-F]{3,6})", m.group(2))
+        if not bg:
+            continue
+        for sel in m.group(1).split(","):
+            sel = sel.strip()
+            if sel and not sel.startswith("@"):
+                out[sel] = bg.group(1)
+    return out
+
+
+def _inherited_bg(sel, bgmap, page_bg):
+    """
+    רקע אפקטיבי: מהסלקטור עצמו, ואם אין — מהאב הקרוב ביותר בשרשרת.
+    לקח 2026-08-09: הבודק בדק כל כלל בנפרד, ולכן ".cta-box h2{color:#fff}"
+    נבדק מול לבן במקום מול הרקע הכהה של ההורה. התוצאה: **כל מאמר**
+    שמשתמש ברכיב cta-box הסטנדרטי מהתבנית נכשל בשגיאה שגויה.
+    """
+    base = sel.split(":")[0].strip()
+    if base in bgmap:
+        return bgmap[base], "עצמי"
+    parts = base.split()
+    for k in range(len(parts) - 1, 0, -1):
+        anc = " ".join(parts[:k])
+        if anc in bgmap:
+            return bgmap[anc], f"בירושה מ-{anc}"
+        # גם סלקטור אב שמוגדר לבדו (".cta-box" מול ".cta-box h2")
+        last = parts[k - 1]
+        if last in bgmap:
+            return bgmap[last], f"בירושה מ-{last}"
+    return page_bg, "ברירת מחדל"
+
+
 def check_contrast(html):
     """
-    v8.1: ניגודיות היא נוסחה על שני מספרים, לא בדיקה ויזואלית.
-    ה-CSS בתבנית מכיל hex מפורש ו-var() אסור בבלוג, ולכן החישוב דטרמיניסטי.
+    v8.7: ניגודיות עם פתרון ירושה.
+    ה-CSS בתבנית מכיל hex מפורש ו-var() אסור בבלוג, ולכן החישוב דטרמיניסטי —
+    אבל רקע נקבע פעם אחת על ההורה, ולכן חובה לטפס בשרשרת הסלקטורים.
     """
     style = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", html, flags=re.S | re.I))
     if not style:
         return
     page_bg = "#ffffff"
+    bgmap = _bg_map(style)
     checked = 0
     for m in re.finditer(r"([^{}]+)\{([^{}]*)\}", style):
-        sel, body = m.group(1).strip(), m.group(2)
+        body = m.group(2)
         fg = re.search(r"(?<!-)\bcolor:\s*(#[0-9a-fA-F]{3,6})", body)
         if not fg:
             continue
-        bg = re.search(r"background(?:-color)?:\s*(#[0-9a-fA-F]{3,6})", body)
-        bgv = bg.group(1) if bg else page_bg
-        # גודל גופן גדול מקבל סף מקל לפי WCAG
         fs = re.search(r"font-size:\s*(\d+)px", body)
         big = fs and int(fs.group(1)) >= 24
         need = 3.0 if big else 4.5
-        ratio = contrast(fg.group(1), bgv)
-        checked += 1
-        if ratio < need:
-            err("CONTRAST_RATIO",
-                f"{sel[:40]} — {fg.group(1)} על {bgv} = {ratio}:1, נדרש {need}:1")
-    NOTES.append(f"ניגודיות: {checked} צמדי צבע נבדקו")
+        for sel in m.group(1).split(","):
+            sel = sel.strip()
+            if not sel or sel.startswith("@"):
+                continue
+            bgv, src = _inherited_bg(sel, bgmap, page_bg)
+            ratio = contrast(fg.group(1), bgv)
+            checked += 1
+            if ratio < need:
+                err("CONTRAST_RATIO",
+                    f"{sel[:38]} — {fg.group(1)} על {bgv} ({src}) = "
+                    f"{ratio}:1, נדרש {need}:1")
+    NOTES.append(f"ניגודיות: {checked} צמדים נבדקו, {len(bgmap)} רקעים ממופים")
 
 
 def check_narrative(html, brief):
