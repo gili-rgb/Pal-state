@@ -1,0 +1,65 @@
+name: Ledger Merge
+
+# סוגר את החוליה הידנית האחרונה: שורת content-ledger אחרי פרסום.
+# postflight כותב ל-ledger-pending.md, וזה ממזג ל-content-ledger.md.
+# [PENDING:slug] מוחלף ב-URL אמיתי ברגע ש-gsc_page_queries מזהה את העמוד,
+# ולכן הריצה חוזרת כל יום שני אחרי משיכת ה-GSC.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ledger-pending.md'      # נכתב = ממזג מיד
+  schedule:
+    - cron: '0 8 * * 1'          # שני 08:00 UTC, אחרי gsc-page-queries ב-06:30
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ledger-merge
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Clone GSC data
+        run: git clone --depth 1 https://github.com/gili-rgb/pal-gsc-data /tmp/pal-gsc
+
+      - name: Merge pending rows
+        run: python tools/ledger_merge.py --gsc /tmp/pal-gsc
+
+      - name: Ledger lint (שער — לא ממזגים לדג'ר שבור)
+        run: python tools/ledger_lint.py content-ledger.md
+
+      - name: Commit & push (עם rebase ו-retry)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config pull.rebase true
+          git add content-ledger.md ledger-pending.md 2>/dev/null || true
+          git diff --staged --quiet && echo "אין שינוי" && exit 0
+          git commit -m "ledger merge (automated) $(date -u +%Y-%m-%d)"
+          for i in 1 2 3; do
+            if git push 2>/tmp/e; then echo "נדחף בניסיון $i"; exit 0; fi
+            cat /tmp/e
+            if grep -qi "rule violation\|protected branch\|push protection\|permission to" /tmp/e; then
+              echo "::error::נדחה מסיבה שאינה התנגשות"
+              exit 1
+            fi
+            git pull --rebase --autostash origin main || exit 1
+            sleep $((i * 5))
+          done
+          echo "::error::push נכשל"
+          exit 1
