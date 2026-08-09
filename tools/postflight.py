@@ -66,13 +66,25 @@ def visible(html):
 # ---------- בדיקות ----------
 
 def matched_topic(html, brief):
-    """הנושא מה-brief שתואם ל-H1. משמש גם ל-TOPIC וגם ל-VIDEO."""
+    """
+    הנושא מה-brief שתואם ל-H1.
+    v8.5: בודק גם את refresh_queue. הגרסה הקודמת בדקה רק את allowed_topics,
+    ולכן כל מאמר Mode Refresh נחסם ב-TOPIC_UNAUTHORIZED — המכונה החליטה
+    "רענן" ואז חסמה את עצמה.
+    """
     m = re.search(r"<h1[^>]*>(.*?)</h1>", html, flags=re.S | re.I)
     h1 = visible(m.group(1)).strip() if m else ""
     for o in brief.get("allowed_topics", []):
         head = " ".join(o["query"].split()[:2])
         if head and head in h1:
-            return o
+            return dict(o, mode="NEW")
+    for o in brief.get("refresh_queue", []):
+        if o.get("existing_h1") and o["existing_h1"][:25] in h1:
+            return dict(o, mode="REFRESH", query=o.get("existing_h1", ""))
+        for t in o.get("triggers", []):
+            head = " ".join(t["query"].split()[:2])
+            if head and head in h1:
+                return dict(o, mode="REFRESH", query=t["query"])
     return None
 
 
@@ -95,8 +107,36 @@ def check_video(html, brief):
          f'({v["views"]} צפיות) — {v["embed"]}')
 
 
+def check_refresh(html, brief):
+    """v8.5: במצב Refresh, ה-URL וה-slug קדושים ו-dateModified חייב להתעדכן."""
+    o = matched_topic(html, brief)
+    if not o or o.get("mode") != "REFRESH":
+        return
+    NOTES.append(f"מצב Refresh על {o['url'][:60]} "
+                 f"({o.get('total_impressions', 0)} חשיפות)")
+    today = date.today().isoformat()
+    if today not in html:
+        err("REFRESH_DATE", f"dateModified ו-.last-updated חייבים להתעדכן ל-{today}")
+    slug = o["url"].rstrip("/").split("/")[-1]
+    if slug and slug not in html:
+        err("REFRESH_URL_CHANGED",
+            f"ה-slug המקורי ({slug[:40]}) אינו מופיע. ב-Refresh ה-URL קדוש")
+    gaps = [g["query"] for g in o.get("gap_queries", [])]
+    if gaps:
+        text = visible(html)
+        covered = [g for g in gaps if all(w in text for w in g.split()[:2])]
+        NOTES.append(f"שאילתות פער שכוסו: {len(covered)}/{len(gaps)}")
+        if not covered:
+            warn("REFRESH_NO_GAIN",
+                 "אף שאילתת פער לא כוסתה. רענון בלי הוספת כיסוי אינו משפר דירוג. "
+                 f"פערים: {', '.join(gaps[:4])}")
+
+
 def check_topic(html, brief):
     """המאמר חייב להיות על נושא מהרשימה המאושרת."""
+    if matched_topic(html, brief):
+        NOTES.append("נושא מאושר")
+        return
     allowed = [o["query"] for o in brief.get("allowed_topics", [])]
     if not allowed:
         err("TOPIC_UNAUTHORIZED", "ה-brief אינו מכיל נושאים מותרים")
@@ -394,6 +434,7 @@ def main():
     check_citations(html)
     check_seo_title(html, a.seo_title)
     check_video(html, brief)
+    check_refresh(html, brief)
     check_contrast(html)
     check_narrative(html, brief)
     check_audience_anchor(html, brief)

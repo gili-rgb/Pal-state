@@ -441,6 +441,54 @@ def match_video(query, videos):
             "coverage": round(cover, 2)}
 
 
+def enrich_refresh(items, pages, ledger):
+    """
+    v1.5: תור Refresh ברמת **עמוד**, לא ברמת שאילתה.
+    הגרסה הראשונה החזירה שורה לכל שאילתה, ולכן אותו עמוד הופיע שש פעמים.
+    רענון מתבצע על עמוד אחד; כל השאילתות שהפעילו אותו הן הטריגר המצטבר.
+
+    לכל עמוד מצורף מה שדרוש כדי לרענן בלי להרוס:
+      • ranking_for — מה העמוד כבר מנצח בו. אסור לפגוע בזה
+      • gap_queries — ביקוש שהעמוד נוגע בו וחלש (מיקום 11-40). שם מוסיפים
+      • frozen — מה שלא נוגעים בו
+    """
+    by_url = {r["url"]: r for r in ledger}
+    grouped = {}
+    for it in items:
+        url = it.get("url")
+        if not url:
+            continue
+        g = grouped.setdefault(url, {"url": url, "kind": "blog",
+                                     "verdict": "REFRESH", "triggers": []})
+        g["triggers"].append({"query": it["query"],
+                              "position": it.get("position"),
+                              "impressions": it.get("impressions", 0)})
+    out = []
+    for url, g in grouped.items():
+        rows = pages.get(url, [])
+        ranked = sorted(rows, key=lambda q: -q["impressions"])
+        led = by_url.get(url, {})
+        # פער = ביקוש אמיתי במיקום חלש. מעל 40 זה כבר לא אותו עמוד בפועל.
+        gaps = [q for q in ranked if 10 < q["position"] <= 40 and q["impressions"] >= 15]
+        g.update({
+            "existing_h1": led.get("h1", ""),
+            "ledger_queries": led.get("queries", []),
+            "total_impressions": sum(q["impressions"] for q in rows),
+            "total_clicks": sum(q["clicks"] for q in rows),
+            "best_position": round(min((q["position"] for q in ranked), default=99), 1),
+            "ranking_for": [{"query": q["query"], "position": round(q["position"], 1),
+                             "impressions": q["impressions"], "clicks": q["clicks"]}
+                            for q in ranked[:10]],
+            "gap_queries": [{"query": q["query"], "position": round(q["position"], 1),
+                             "impressions": q["impressions"]} for q in gaps[:12]],
+            "frozen": ["URL", "slug", "datePublished", "@id של הישויות"],
+        })
+        g["triggers"] = sorted(g["triggers"], key=lambda t: -t["impressions"])[:8]
+        out.append(g)
+    out.sort(key=lambda x: -x["total_impressions"])
+    return out
+
+
 def phase_plan(site):
     OUT.mkdir(exist_ok=True)
     lint = load_lint_version()
@@ -457,7 +505,8 @@ def phase_plan(site):
     gems = load_autocomplete(site, blog_urls, pages, ledger)
     seen = {o["query"].lower() for o in allowed}
     allowed += [g for g in gems if g["query"].lower() not in seen]
-    refresh = [o for o in opps if o["verdict"] == "REFRESH"]
+    refresh = enrich_refresh(
+        [o for o in opps if o["verdict"] == "REFRESH"], pages, ledger)
     hub_gaps = [o for o in opps if o["kind"] == "brandhub"][:10]
 
     if not allowed and not refresh:
@@ -522,9 +571,10 @@ def phase_plan(site):
     print(f"\n🏷️  פערי brand hub ({len(hub_gaps)}) — לא נושא בלוג:")
     for o in hub_gaps[:4]:
         print(f"   {o['impressions']:6d} | {o['query'][:45]}")
-    print(f"\n🔄 תור Refresh ({len(refresh)}) — אלה נפסלו למאמר חדש:")
-    for o in refresh[:5]:
-        print(f"   {o['impressions']:6d} | pos {o['position']:5.1f} | {o['query'][:40]} → {o['url'][:45]}")
+    print(f"\n🔄 תור Refresh ({len(refresh)}) — ממוין לפי פוטנציאל:")
+    for o in refresh[:6]:
+        print(f"   {o['total_impressions']:7d} חשיפות | pos {o['best_position']:5.1f} | "
+              f"{len(o['gap_queries']):2d} פערים | {o['url'].split('.co.il')[-1][:40]}")
     print(f"\nנכתב: {p}")
     return 0
 
