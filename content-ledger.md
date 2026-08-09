@@ -143,6 +143,10 @@
 ## brand hub (type=brandhub) — נפרד מ-dedup הבלוג
 | תאריך רטרו | אתר | URL | H1 | מותג | pal-lint |
 |---|---|---|---|---|---|
+| 2026-07-16 | csb | /brands/bosch-service/ | בוש שירות לקוחות רשמי: תיקונים, חלפים ואבחון תקלות | Bosch | רטרו |
+| 2026-07-16 | csb | /brands/siemens-service/ | סימנס שירות לקוחות רשמי: תיקונים וחלפים מקוריים | Siemens | רטרו |
+| 2026-07-16 | csb | /brands/constructa-service/ | קונסטרוקטה שירות לקוחות רשמי: תיקונים וחלפים | Constructa | רטרו |
+| 2026-07-16 | csb | /brands/gaggenau-service/ | גגנאו שירות לקוחות רשמי: תיקונים וחלפים מקוריים | Gaggenau | רטרו |
 | 2026-07-07 | marom | /brands/haier-service/ | האייר שירות לקוחות רשמי: תיקונים, חלפים ואבחון תקלות בישראל | Haier | v1.2.0 ✅ |
 | 2026-07-08 | marom | /brands/blomberg-service/ | בלומברג שירות לקוחות רשמי: תיקונים, חלפים ומצב שבת | Blomberg | v1.2.0 ✅ |
 | 2026-07-08 | marom | /brands/delonghi-service/ | דלונגי שירות לקוחות רשמי: תיקונים, חלפים ובורר מצבים | DeLonghi | v1.2.1 ✅ |
