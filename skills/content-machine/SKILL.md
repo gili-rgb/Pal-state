@@ -13,7 +13,9 @@ description: >
   (csb.co.il), מרום (marom-serv.co.il), פלרום (plrom.co.il).
 ---
 
-# מכונת תוכן v8.5 — SEO + GEO/AEO & HTML לאלמנטור
+# מכונת תוכן v8.6 — SEO + GEO/AEO & HTML לאלמנטור
+
+> **v8.6 (סגירת החוליה הידנית האחרונה, 2026-08-09):** שורת ה-ledger הועתקה ידנית עד היום, ונשכחה חמש פעמים — ובכל פעם שער הדדופ נחלש. `postflight` כותב עכשיו ל-`ledger-pending.md`, ה-workflow `ledger-merge` ממזג ל-`content-ledger.md`, ו-`[PENDING:slug]` מוחלף ב-URL אמיתי מ-`gsc_page_queries` (כל שני). **עקרון מנחה: פעולה ידנית חוזרת היא פגם בעיצוב, לא תהליך.** ההעלאה לאלמנטור נשארת הפעולה האנושית היחידה.
 
 > **v8.5 (Mode Refresh בר-ביצוע, 2026-08-09):** המכונה ידעה להחליט "רענן" ואז חסמה את עצמה — `postflight` בדק H1 רק מול `allowed_topics`, ולכן כל מאמר Refresh נפל ב-`TOPIC_UNAUTHORIZED`. (1) `matched_topic` מזהה גם `refresh_queue`. (2) **תור ה-Refresh עבר לרמת עמוד ולא שאילתה** — 51 שורות כפולות ל-CSB הפכו ל-7 עמודים ייחודיים, ממוינים לפי חשיפות. (3) כל עמוד מגיע עם `ranking_for` (מה לא לשבור), `gap_queries` (מיקום 11-40 — שם מוסיפים), ו-`frozen`. (4) שלושה כללים חדשים: `REFRESH_DATE`, `REFRESH_URL_CHANGED`, `REFRESH_NO_GAIN`. (5) **שלב 2ב חדש בסקיל.**
 
@@ -441,7 +443,9 @@ python3 /home/claude/pal-state/tools/postflight.py \
 | `TERM_VERIFY` — מונח שאינו באוצר המילים המאומת | WARN, טפל תמיד |
 | `H2_QUESTION_RATIO` — אחוז H2 בפורמט שאלה | WARN בלבד, לעולם לא חוסם |
 
-**exit 0 = תנאי הגשה יחיד.** ERROR = תקן והרץ מחדש. הדוח ושורת ה-ledger שהסקריפט מייצר מצורפים לפלט.
+**exit 0 = תנאי הגשה יחיד.** ERROR = תקן והרץ מחדש. הדוח מצורף לפלט.
+
+**שורת ה-ledger נכתבת אוטומטית (v8.6).** `postflight` כותב אותה ל-`pal-state/ledger-pending.md`, וה-workflow `ledger-merge` ממזג ל-`content-ledger.md`. במאמר חדש נרשם `[PENDING:slug]`, ו-`ledger_merge` מחליף אותו ב-URL האמיתי ברגע ש-`gsc_page_queries` מזהה את העמוד (כל יום שני). **אל תבקש מגיל להעתיק שורה ידנית.** הפעולה האנושית היחידה שנשארה היא ההעלאה לאלמנטור.
 
 ארבעת פריטי השיפוט שנשארו ב-v8.0 עברו למיכון ב-v8.1: `CONTRAST_RATIO` (נוסחת WCAG על צבעי hex), `NARRATIVE_MISSING` (משפט קנוני מקובץ הפרויקט ב-Direct Answer + Organization description), `AUDIENCE_ANCHOR` (מונח כאב + פנייה ישירה + מונחי מכשיר ב-200 מילים ראשונות), `INFO_GAIN_DIFF` (דיף H2 מול המתחרים).
 
