@@ -262,11 +262,58 @@ def run_pal_lint(site, path, keyword):
 
 
 def ledger_row(html, brief, url):
+    """
+    v8.6: השורה נכתבת לתור ולא רק מודפסת.
+    עד היום גיל היה מעתיק אותה ידנית לריפו — פעולה ידנית חוזרת, כלומר
+    פגם בעיצוב. עכשיו: postflight כותב ל-ledger-pending.md, workflow ממזג,
+    וה-URL הסופי מושלם אוטומטית מ-gsc_page_queries שרץ כל שני.
+    """
+    o = matched_topic(html, brief)
     m = re.search(r"<h1[^>]*>(.*?)</h1>", html, flags=re.S | re.I)
     h1 = visible(m.group(1)).strip() if m else ""
-    qs = [o["query"] for o in brief.get("allowed_topics", [])][:5]
-    return f"| {date.today()} | {url or '[URL אחרי פרסום]'} | {h1} | {'; '.join(qs)} |"
 
+    if o and o.get("mode") == "REFRESH":
+        # ברענון ה-URL ידוע ולא משתנה, והשאילתות הן מה שהעמוד כבר מדורג עליו
+        # בתוספת הפערים שכוסו.
+        url = url or ("https://" + o["url"])
+        qs = [q["query"] for q in o.get("ranking_for", [])][:3] + \
+             [g["query"] for g in o.get("gap_queries", [])][:2]
+        mode = "refresh"
+    else:
+        qs = [o["query"]] if o else []
+        qs += [t["query"] for t in (brief.get("allowed_topics") or [])[:4]
+               if not o or t["query"] != o["query"]]
+        mode = "new"
+
+    slug = slug_guess(h1)
+    url_cell = url or f"[PENDING:{slug}]"
+    row = f"| {date.today()} | {url_cell} | {h1} | {'; '.join(qs[:5])} |"
+    write_pending(brief.get("site", ""), row, mode, slug)
+    return row
+
+
+def slug_guess(h1):
+    """ניחוש ה-slug מה-H1, בפורמט וורדפרס. משמש להשלמה אוטומטית מ-GSC."""
+    s = re.sub(r"[^\w\u0590-\u05FF\s-]", "", h1).strip()
+    return re.sub(r"\s+", "-", s)[:80]
+
+
+def write_pending(site, row, mode, slug):
+    """
+    תור ההמתנה. ה-workflow ב-Pal-state ממזג אותו ל-content-ledger.md,
+    ומחליף [PENDING:slug] ב-URL האמיתי ברגע ש-gsc_page_queries מזהה אותו.
+    """
+    f = STATE / "ledger-pending.md"
+    head = ("# תור שורות ledger ממתינות\n\n"
+            "נכתב אוטומטית ע\"י postflight. ה-workflow `ledger-merge` ממזג ל-"
+            "content-ledger.md.\n[PENDING:slug] מוחלף ב-URL אמיתי כש-"
+            "gsc_page_queries מזהה את העמוד.\n\n")
+    cur = f.read_text(encoding="utf-8") if f.exists() else head
+    entry = f"- site={site} mode={mode} slug={slug}\n  {row}\n"
+    if row in cur:
+        return
+    f.write_text(cur.rstrip("\n") + "\n" + entry, encoding="utf-8")
+    NOTES.append(f"שורת ledger נכתבה לתור: {f.name}")
 
 
 # ---------- v8.1 ----------
@@ -419,6 +466,7 @@ def main():
 
     html = Path(a.file).read_text(encoding="utf-8")
     brief = json.loads(Path(a.brief).read_text(encoding="utf-8"))
+    brief.setdefault("site", a.site)
 
     if brief.get("degraded"):
         err("DRAFT_BRIEF",
@@ -452,8 +500,9 @@ def main():
         print(f"\n🔴 postflight נכשל: {len(ERRORS)} שגיאות. אין הגשה.")
         return 1
     print(f"\n✅ postflight עבר ({len(WARNS)} אזהרות)")
-    print("\nשורת ledger להוספה:")
-    print(ledger_row(html, brief, a.url))
+    row = ledger_row(html, brief, a.url)
+    print("\nשורת ledger (נכתבה לתור אוטומטית):")
+    print(row)
     return 0
 
 
