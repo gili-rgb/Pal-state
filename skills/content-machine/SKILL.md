@@ -13,7 +13,9 @@ description: >
   (csb.co.il), מרום (marom-serv.co.il), פלרום (plrom.co.il).
 ---
 
-# מכונת תוכן v8.12 — SEO + GEO/AEO & HTML לאלמנטור
+# מכונת תוכן v8.13 — SEO + GEO/AEO & HTML לאלמנטור
+
+> **v8.13 (חיפוש אינו תנאי להגשה, 2026-08-10):** `competitor_headings` היה ב-`REQUIRED_MCP`, ולכן **סביבה בלי `web_search` נתקעה** — או ש-`finalize` נעצר, או שהיא סומנה DRAFT ו-`postflight` חסם ב-ERROR. אין היגיון שמקור של כלל WARN יחסום הגשה. השדה עבר ל-`OPTIONAL_MCP`: חסרונו מודפס כהודעה, הריצה ממשיכה, ו-`INFO_GAIN_DIFF` מתריע כרגיל. **חובה נשארו: `live_blog_titles` ו-`products`** — בלעדיהם אין דדופ ואין כרטיס Hero מאומת.
 
 > **v8.12 (הפרדת עמודי שותפים, 2026-08-10):** v8.11 המליץ לקשר ל-`/sharp-service/` — עמוד שותף ש-`pal_lint` אוסר לקשר אליו. **שני כללים סתרו זה את זה:** preflight המליץ, postflight חוסם. תשעה מתוך עשרים ה"נכסים" במרום היו עמודי שותפים. התיקון: `dominant_pages` מכיל רק נכסים שלנו, ו-`partner_dominated` מרכז את השאילתות שתפוסות על ידי שותפים — לא לקשר, לא לשכפל, **וזו רשימת ההזדמנויות לעמודי `/brands/`.** במרום: 15 שאילתות, ובהן "טכנאי מקרר שארפ" (1,421 חשיפות, מיקום 1.9).
 
@@ -140,7 +142,7 @@ python3 /home/claude/pal-state/tools/preflight.py --site [csb|marom|plrom] --pha
 |------|------|-----|
 | `live_blog_titles` | `get_page_html` על `/blog/` | שכבת דדופ שלישית |
 | `products` | `search_products` על מונח מהנושא | כרטיס Hero verbatim |
-| **`competitor_headings`** | **`web_search` על שאילתת היעד + `web_fetch` ל-3-5 תוצאות מובילות, חילוץ ה-H2 שלהן** | **מזין את `INFO_GAIN_DIFF`. בלי זה בדיקת ה-Information Gain לא פועלת** |
+| `competitor_headings` | `web_search` על שאילתת היעד + חילוץ H2 מ-3-5 התוצאות המובילות | **רצוי ולא חובה.** מזין את `INFO_GAIN_DIFF` (WARN). **בסביבה בלי חיפוש — דלג והמשך**, הריצה אינה נחסמת |
 | `brand_hub`, `verified_links` | לפי הצורך | זווית בידול, קישורים מאומתים |
 
 ואז:
