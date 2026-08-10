@@ -32,7 +32,12 @@ from pathlib import Path
 #  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
 #  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
 #  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
-VERSION = "1.10.1"
+VERSION = "1.11.0"
+# v1.11.0 (2026-08-10): EVASIVE_ANSWER (ERROR) — שאלה מסחרית חייבת מספר בתשובה.
+#   הרקע: מאמר Refresh על עמוד עם 73,539 חשיפות במיקום 5.2 ו-CTR 0.25% ענה
+#   על "כמה עולה ביקור טכנאי" ב"העלות תלויה, פתחו קריאת שירות". זו הפניה
+#   ולא תשובה, וזה בדיוק מה שמייצר CTR כזה. המאמרים נועדו להמיר.
+#   מחירים מאומתים חיים בזיכרון: CSB 349 ₪, פלרום 390/340/290 ₪.
 # v1.10.0 (2026-08-06): BRAND_SAMEAS_MISSING (WARN) — קישור לגרף הידע העולמי.
 #   ישות Brand ב-@graph של מותג שנמצא ב-brand-entities.md חייבת sameAs.
 #   הרישום מאומת ידנית; מותג שאינו בו אינו מעורר אזהרה. QID שגוי גרוע מחסר —
@@ -812,6 +817,49 @@ def check_brand_sameas(html, rep, doc_type):
                     f'"{brand}" מקושר לתאגיד האם ולא ליצרן מוצרי החשמל. הנכון: BSH (Q614920)')
 
 
+# שאלות עם כוונה מסחרית. הקורא מחפש מספר, לא הפניה.
+COMMERCIAL_Q = [
+    "כמה עולה", "מה המחיר", "מה העלות", "כמה זה עולה", "כמה עולים",
+    "כמה זמן לוקח", "תוך כמה זמן", "מתי מגיע", "כמה זמן ממתינים",
+    "מה מחיר", "עלות ביקור", "מחיר ביקור", "כמה יעלה",
+]
+# ניסוחים שמחליפים מספר בהפניה. אלה הדגלים האדומים.
+EVASION = [
+    "תלוי בסוג", "תלוי במיקום", "משתנה בהתאם", "לקבלת הצעת מחיר",
+    "פנו אלינו", "צרו קשר לקבלת", "נשמח לעדכן", "בהתאם לאבחון",
+    "לפרטים נוספים פנו", "יימסר בשיחה",
+]
+
+
+def check_evasive_answers(html, rep, doc_type):
+    """
+    v1.11.0: שאלה מסחרית בלי מספר בתשובה.
+    הכלל אינו על ניסוח אלא על ערך: קורא שמחפש "כמה עולה טכנאי" ומקבל
+    "העלות תלויה, פנו אלינו" חוזר לגוגל. זה מה שמייצר CTR של 0.25%.
+    מחיר מאומת קיים בזיכרון לכל אתר — יש להשתמש בו.
+    """
+    if doc_type == "product":
+        return
+    blocks = re.findall(r"<h3[^>]*>(.*?)</h3>\s*(.*?)(?=<h[23]|</article|<div class=\"cta)",
+                        html, flags=re.S | re.I)
+    blocks += [(q, a) for q, a in re.findall(
+        r'"name":\s*"([^"]*?)".{0,120}?"text":\s*"([^"]{20,})"', html, flags=re.S)]
+    for q, a in blocks:
+        qt = visible_text(q)
+        if not any(c in qt for c in COMMERCIAL_Q):
+            continue
+        at = visible_text(a)
+        has_number = re.search(r"\d{2,}\s*(?:₪|ש\"ח|שקל)|₪\s*\d{2,}"
+                               r"|\d+\s*(?:ימי עסקים|ימים|שעות|שבועות)", at)
+        if has_number:
+            continue
+        why = next((e for e in EVASION if e in at), None)
+        rep.err("EVASIVE_ANSWER",
+                f'שאלה מסחרית בלי מספר בתשובה: "{qt[:55]}"'
+                + (f' — ניסוח מתחמק: "{why}"' if why else "")
+                + ". מחיר/זמן מאומת חייב להופיע. המאמר נועד להמיר")
+
+
 def check_brand_hub_link(html, rep, site, doc_type):
     """v1.9.0: כל מאמר בלוג מזין את עמודי המותג שלנו, לא את עמודי השותפים."""
     if doc_type != "blog" or not site:
@@ -873,6 +921,7 @@ def run(path, site=None, doc_type=None, keyword=None):
     check_competitor_sources(html, rep, doc_type)
     check_bauknecht(html, rep, doc_type)
     check_brand_hub_link(html, rep, site, doc_type)
+    check_evasive_answers(html, rep, doc_type)
     check_brand_sameas(html, rep, doc_type)
     check_h1_listicle(html, rep, doc_type)
     check_plrom_name(html, rep, site, doc_type)

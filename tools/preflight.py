@@ -519,6 +519,26 @@ def enrich_refresh(items, pages, ledger):
     return out
 
 
+# מחירי שירות מאומתים. מקור: גיל, 2026-08-10. מוזרמים ל-brief כדי שהמודל
+# יענה במספר ולא יפנה. תשובה בלי מספר נחסמת ב-EVASIVE_ANSWER.
+PRICING = {
+    "csb": {
+        "ביקור טכנאי בבית": "349 ₪, לא כולל חלקים",
+        "הערה": "בתקופת האחריות ללא עלות",
+    },
+    "plrom": {
+        "ביקור טכנאי בבית — מילה או ליבהר": "390 ₪ כולל מע\"מ",
+        "ביקור טכנאי בבית — סאוטר או TCL": "340 ₪ כולל מע\"מ",
+        "בדיקת מעבדה — מוצר קטן": "290 ₪ כולל מע\"מ",
+        "בדיקת מעבדה — מכונת קפה ברוויל או סייג'": "390 ₪ כולל מע\"מ",
+        "הערה": "ביקור בית רק למוצרים גדולים: כביסה, מייבש, מדיח, תנור, מקרר, כיריים",
+    },
+    "marom": {
+        "_pending": "מחיר ביקור לפי מותג — טרם התקבל מגיל. אל תנחש, שאל.",
+    },
+}
+
+
 def phase_plan(site):
     OUT.mkdir(exist_ok=True)
     lint = load_lint_version()
@@ -564,6 +584,9 @@ def phase_plan(site):
         "refresh_queue": refresh,
         "brand_hub_gaps": hub_gaps,
         "brand_hubs": brand_hubs,        # עמודי המותג הקיימים — חובה לקשר אליהם
+        "pricing": PRICING.get(site, {}),   # שאלה מסחרית = תשובה במספר
+        "conversion_rule": ("שאלה על מחיר או זמן חייבת תשובה עם המספר מ-pricing. "
+                            "\"תלוי, פנו אלינו\" נחסם ב-EVASIVE_ANSWER."),
         "video_catalog_size": len(videos),
         "brand_hub_link_rule": "כל מאמר חייב לפחות קישור אחד ל-/brands/ (BRAND_HUB_MISSING)",
         "canonical_sentences": canonical_sentences(site),
