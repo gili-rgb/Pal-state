@@ -137,6 +137,55 @@ CONVERSION_TARGETS = ["/product/", "/cart", "myarea", "/צור-קשר", "/contac
                       "tel:", "/all-products"]
 
 
+def check_ai_channel(html, brief):
+    """
+    v8.9: הסטת עומס מהמוקד לערוץ ה-AI.
+    נתוני GBP (2026-08-10): 5,637 שיחות בחודשיים לכרטיס CSB. גיל הגדיר
+    שהמטרה אינה להגדיל את המספר אלא **להסיט אותו** — הנציגה זמינה 24/7
+    בלי המתנה לנציג, והמוקד האנושי הוא חלופה ולא ברירת מחדל.
+
+    הכלל חל רק כשהמאמר מזכיר תיאום התקנה או יצירת קשר, ורק באתרים
+    שיש בהם נציגה (לפלרום אין).
+    """
+    agent = brief.get("ai_agent")
+    if not agent:
+        return
+    text = visible(html)
+    triggers = ["תיאום", "לתאם", "התקנה", "קריאת שירות", "יצירת קשר",
+                "להזמין טכנאי", "הזמנת טכנאי", "מוקד"]
+    if not any(t in text for t in triggers):
+        return
+    has_url = agent["url"].split("?")[0] in html
+    if not has_url:
+        err("AI_CHANNEL_MISSING",
+            f'המאמר מזכיר תיאום או יצירת קשר בלי לקשר לנציגת ה-AI '
+            f'({agent["name"]}, {agent["url"]}). היא זמינה 24/7 בלי המתנה, '
+            f'והמטרה להסיט עומס מהמוקד')
+        return
+    NOTES.append(f"ערוץ AI: {agent['name']} מקושר")
+    # סדר ההצגה: הנציגה לפני מספר המוקד
+    ai_pos = html.find(agent["url"].split("?")[0])
+    for phone in ("08-977-7222", "08-9777222", "*2620"):
+        pp = html.find(phone)
+        if 0 <= pp < ai_pos:
+            warn("AI_CHANNEL_ORDER",
+                 f'מספר המוקד ({phone}) מופיע לפני ערוץ ה-AI. '
+                 f'הנציגה היא האפשרות הראשונה, המוקד חלופה')
+            break
+
+
+def check_click_to_call(html, brief):
+    """v8.9: 72-76% מהתנועה מובייל. קישור חיוג חייב להיות בר-לחיצה."""
+    text = visible(html)
+    phones = re.findall(r"0\d{1,2}-?\d{3}-?\d{4}|\*\d{4}", text)
+    if not phones:
+        return
+    if not re.search(r'href="tel:', html):
+        warn("NO_CLICK_TO_CALL",
+             f"מוזכר מספר טלפון ({phones[0]}) בלי קישור tel:. "
+             f"72-76% מהתנועה מובייל — מספר שאינו בר-לחיצה מאבד שיחות")
+
+
 def check_conversion_path(html, brief):
     """
     v8.8: מסלול פעולה נדרש **רק** מעמוד conversion.
@@ -587,6 +636,8 @@ def main():
     check_video(html, brief)
     check_refresh(html, brief)
     check_conversion_path(html, brief)
+    check_ai_channel(html, brief)
+    check_click_to_call(html, brief)
     check_contrast(html)
     check_narrative(html, brief)
     check_audience_anchor(html, brief)

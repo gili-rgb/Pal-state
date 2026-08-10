@@ -562,6 +562,24 @@ def enrich_refresh(items, pages, ledger):
     return out
 
 
+# נציגת AI לתיאום התקנות. יעד הסטה (הכרעת גיל 2026-08-10): 5,637 שיחות
+# לחודשיים מכבידות על המוקד. הערוץ הזה מוצג ראשון, המוקד כחלופה.
+AI_AGENT = {
+    "csb": {
+        "name": "מאיה",
+        "url": "https://csb.co.il/ai-install/?dept=csb",
+        "phone": "079-919-8357",
+        "note": "תיאום, שינוי מועד וביטול התקנה. 24/7, 365 ימים, בלי המתנה לנציג. קול וצ'אט",
+    },
+    "marom": {
+        "name": "דנה",
+        "url": "https://marom-serv.co.il/ai-install/?dept=marom",
+        "phone": "079-920-5886",
+        "note": "תיאום, שינוי מועד וביטול התקנה. 24/7, 365 ימים, בלי המתנה לנציג. קול וצ'אט",
+    },
+    "plrom": None,
+}
+
 # מחירי שירות מאומתים. מקור: גיל, 2026-08-10. מוזרמים ל-brief כדי שהמודל
 # יענה במספר ולא יפנה. תשובה בלי מספר נחסמת ב-EVASIVE_ANSWER.
 PRICING = {
@@ -629,6 +647,11 @@ def phase_plan(site):
         "brand_hub_gaps": hub_gaps,
         "brand_hubs": brand_hubs,        # עמודי המותג הקיימים — חובה לקשר אליהם
         "pricing": PRICING.get(site, {}),   # שאלה מסחרית = תשובה במספר
+        "ai_agent": AI_AGENT.get(site),
+        "channel_priority": (
+            "כשמזכירים תיאום התקנה או יצירת קשר: ערוץ ה-AI ראשון ומומלץ "
+            "(24/7, בלי המתנה), מוקד טלפוני כחלופה. המטרה להסיט עומס מהמוקד."
+        ) if AI_AGENT.get(site) else None,
         "page_intent_rules": PAGE_INTENT,
         "conversion_rule": ("שאלה על מחיר או זמן חייבת תשובה עם המספר מ-pricing. "
                             "\"תלוי, פנו אלינו\" נחסם ב-EVASIVE_ANSWER."),
