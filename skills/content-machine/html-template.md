@@ -1,4 +1,4 @@
-# תבנית HTML v7.10 — מוכנה להטמעה בווידג'ט HTML של Elementor
+# תבנית HTML v7.11 — מוכנה להטמעה בווידג'ט HTML של Elementor
 
 > **v7.9 (2026-08-03):** **ישות `Product` הוסרה מה-@graph.** התבנית עדיין הציגה "6 entities, או 7 עם כרטיס מוצר" וכללה בלוק Product מלא — סתירה מול SKILL v7.15+ שקובע 6 ישויות תמיד, ומול pal-lint שאוכף `SCHEMA_PRODUCT_BLOG` כ-ERROR. דריפט בן שלוש גרסאות שנתפס באודיט v7.18. `mentions` מצביע על Brand בלבד.
 
@@ -152,6 +152,12 @@
 .cta-box p { color: #c4ccd2; }
 .cta-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 15px; }
 .cta-primary { background: #B55304; color: #fff !important; padding: 12px 28px; border-radius: 8px; font-weight: 700; text-decoration: none; border: none; display: inline-block; }
+.cta-ai { background: #fff; color: #140C3C !important; padding: 12px 28px; border-radius: 8px; font-weight: 700; text-decoration: none; border: 2px solid #fff; display: inline-block; }
+.call-strip { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #F4F3FC; border-right: 4px solid #140C3C; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+.call-strip-txt { flex: 1; min-width: 170px; font-size: 15px; }
+.call-strip a.tel { display: inline-flex; align-items: center; gap: 7px; background: #140C3C; color: #fff !important; font-weight: 700; font-size: 16px; padding: 10px 20px; border-radius: 8px; text-decoration: none !important; white-space: nowrap; border-bottom: none !important; }
+.call-strip a.tel:hover { background: #2E2D38; color: #fff !important; }
+.call-strip a.tel:focus-visible { outline: 3px solid #D01F26; outline-offset: 2px; }
 .cta-primary:hover { background: #974503; color: #fff !important; border-bottom: none !important; }
 .cta-secondary { background: transparent; color: #fff !important; padding: 12px 28px; border-radius: 8px; font-weight: 700; text-decoration: none; border: 2px solid #fff; display: inline-block; }
 .cta-secondary:hover { background: rgba(255,255,255,0.1); color: #fff !important; border-bottom: none !important; }
@@ -367,6 +373,29 @@
 ```
 
 ---
+
+### רצועת חיוג ותיאום (v7.11) — חובה כשהמאמר מזכיר תיאום או יצירת קשר
+
+72-76% מהתנועה מובייל. מספר שאינו בר-לחיצה מאבד שיחות, ולכן `href="tel:"` חובה.
+**סדר ההצגה: נציגת ה-AI ראשונה, המוקד חלופה** — המטרה להסיט עומס מהמוקד האנושי.
+
+```html
+<div class="call-strip">
+  <span class="call-strip-txt">
+    לתיאום התקנה בלי המתנה לנציג, [שם הנציגה] זמינה 24/7 כל השנה, בשיחה ובצ'אט.
+  </span>
+  <a class="tel" href="tel:[טלפון מ-brief.ai_agent]">&#9742; [טלפון הנציגה]</a>
+</div>
+```
+
+בתוך `.cta-box`, כשיש נציגה, הכפתור הראשון מוביל אליה:
+
+```html
+<a href="[brief.ai_agent.url]" class="cta-primary">תיאום מיידי עם [שם הנציגה]</a>
+<a href="[עמוד יצירת קשר]" class="cta-ai">למוקד השירות</a>
+```
+
+**לפלרום אין נציגת AI** — `brief.ai_agent` יחזיר `null`, ואז מוצג המוקד בלבד. הצבעים כאן הם של מרום; החלף לפי טבלת הצבעים של האתר.
 
 ## Schema @graph — שלד (6 entities תמיד)
 
