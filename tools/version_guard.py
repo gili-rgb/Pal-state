@@ -127,6 +127,30 @@ def check_cross_file(skill_dir, s):
                         f"{f.name}:{i} שימוש במונח אסור '{bad}' (הנכון: {right})")
 
 
+def check_state_freshness(cur_skill, lint_ver):
+    """
+    v1.1: STATE.md חייב לשקף את המציאות.
+    לקח 2026-08-10: STATE.md נשאר על v8.3 בזמן שהמערכת הייתה ב-v8.13 —
+    ארבעה ימי פיגור. סשן חדש שקורא אותו מקבל תמונה שגויה, וזה בדיוק
+    מה שהקובץ נועד למנוע.
+    """
+    f = ROOT / "STATE.md"
+    if not f.exists():
+        err("STATE_MISSING", "STATE.md חסר")
+        return
+    t = f.read_text(encoding="utf-8")
+    ok = True
+    if f"v{cur_skill}" not in t:
+        err("STATE_STALE",
+            f"STATE.md אינו מזכיר את v{cur_skill}. עדכן אותו באותו commit")
+        ok = False
+    if lint_ver not in t:
+        err("STATE_STALE", f"STATE.md אינו מזכיר את pal-lint {lint_ver}")
+        ok = False
+    if ok:
+        NOTES.append(f"STATE.md משקף v{cur_skill} ו-pal-lint {lint_ver}")
+
+
 def main():
     skill_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "skills" / "content-machine"
     if not skill_dir.exists():
@@ -134,6 +158,11 @@ def main():
         return 0
     s = check_versions(skill_dir)
     if s:
+        m = re.search(r"^#\s+.*?v(\d+\.\d+(?:\.\d+)?)", s, re.M)
+        lm = re.search(r'VERSION\s*=\s*"([\d.]+)"',
+                       (ROOT / "tools" / "pal_lint.py").read_text(encoding="utf-8"))
+        if m and lm:
+            check_state_freshness(m.group(1), lm.group(1))
         check_lint_reference(s)
         check_tools(s)
         check_cross_file(skill_dir, s)
