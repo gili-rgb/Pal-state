@@ -128,6 +128,39 @@ for q, want in [
 ]:
     check(f"intent: {q[:28]}", PF.page_intent(q), want)
 
+# ---------- עקביות בין כלים (2026-08-10) ----------
+# הבעיה חזרה שלוש פעמים: כלל אחד ממליץ לקשר, כלל אחר חוסם.
+# הבדיקה מריצה כל URL שה-brief ממליץ עליו דרך pal_lint האמיתי.
+import subprocess  # noqa: E402
+import tempfile  # noqa: E402
+
+_TOOLS = Path(__file__).resolve().parent.parent
+
+
+def _blocked(site, url):
+    html = ('<article class="blog-article" dir="rtl" lang="he">'
+            f'<h1>x</h1><a href="{url}">y</a></article>')
+    with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
+                                     encoding="utf-8") as f:
+        f.write(html)
+        path = f.name
+    r = subprocess.run(
+        [sys.executable, str(_TOOLS / "pal_lint.py"), "--site", site,
+         "--type", "blog", path], capture_output=True, text=True)
+    return "FORBIDDEN_LINK" in r.stdout
+
+
+for _site in ("csb", "marom", "plrom"):
+    _bf = Path(f"/home/claude/brief/brief_partial_{_site}.json")
+    if not _bf.exists():
+        continue
+    _b = _json.loads(_bf.read_text(encoding="utf-8"))
+    _urls = ([d["url"] for d in _b.get("dominant_pages", [])]
+             + [h["url"] for h in _b.get("brand_hubs", [])]
+             + [l for l in _b.get("verified_links", [])])
+    _bad = [u for u in _urls if _blocked(_site, "https://" + u.lstrip("htps:/"))]
+    check(f"עקביות {_site}: brief לא ממליץ על קישור אסור", _bad[:2], [])
+
 if FAILED:
     print("\n🔴 test_flight נכשל:")
     for f in FAILED:
