@@ -132,6 +132,41 @@ def check_refresh(html, brief):
                  f"פערים: {', '.join(gaps[:4])}")
 
 
+CONVERSION_TARGETS = ["/product/", "/cart", "myarea", "/צור-קשר", "/contact",
+                      "-categories/", "-אביזרים-וחלפים", "/product-category/",
+                      "tel:", "/all-products"]
+
+
+def check_conversion_path(html, brief):
+    """
+    v8.8: מסלול פעולה נדרש **רק** מעמוד conversion.
+    לקח 2026-08-10 (הכרעת גיל): לא כל עמוד חייב להמיר. עמוד service
+    שפתר ללקוח את הבעיה וחסך שיחה למוקד עשה את עבודתו, ומדידתו
+    בהמרות מייצרת מסקנה שגויה. /סרטוני-הדרכה/ עם 7,031 צפיות ואפס
+    המרות אינו כישלון.
+
+    הנתונים שהובילו לכלל: עמודי מוצר ממירים 30-37%, מאמרי תוכן אפס.
+    מה שחסר בהם הוא לא תוכן אלא **דרך לפעולה**.
+    """
+    o = matched_topic(html, brief)
+    intent = (o or {}).get("intent")
+    if not intent:
+        return
+    NOTES.append(f"כוונת העמוד: {intent}")
+    if intent != "conversion":
+        NOTES.append("   עמוד שאינו conversion — לא נדרש מסלול פעולה")
+        return
+    hrefs = re.findall(r'href="([^"]+)"', html)
+    hits = [h for h in hrefs if any(t in h for t in CONVERSION_TARGETS)]
+    if not hits:
+        err("NO_CONVERSION_PATH",
+            "עמוד בכוונת conversion בלי מסלול פעולה. נדרש כרטיס מוצר, "
+            "קישור לקטגוריה, לעמוד יצירת קשר או לאזור האישי. "
+            "בנתוני GA4: עמודי מוצר ממירים 30-37%, מאמרי תוכן אפס")
+    else:
+        NOTES.append(f"   מסלולי פעולה: {len(hits)}")
+
+
 def check_topic(html, brief):
     """המאמר חייב להיות על נושא מהרשימה המאושרת."""
     if matched_topic(html, brief):
@@ -551,6 +586,7 @@ def main():
     check_seo_title(html, a.seo_title)
     check_video(html, brief)
     check_refresh(html, brief)
+    check_conversion_path(html, brief)
     check_contrast(html)
     check_narrative(html, brief)
     check_audience_anchor(html, brief)

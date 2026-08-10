@@ -76,6 +76,47 @@ def is_excluded_brand(query, site):
     return any(b.lower() in q for b in EXCLUDED_BRANDS.get(site, []))
 
 
+# סיווג כוונת עמוד (הכרעת גיל, 2026-08-10). לא כל עמוד חייב להמיר,
+# וכל סוג נמדד אחרת. הסדר בעידן AI Overview:
+#   להיות מצוטט ← להביא תנועה ← לתת ערך ← לאפשר פעולה
+PAGE_INTENT = {
+    "conversion": {
+        "signals": ["מחיר", "כמה עולה", "עלות", "לקנות", "רכישה", "חלקי חילוף",
+                    "חלפים", "אביזר", "אביזרים", "מקורי", "להזמין", "טכנאי",
+                    "תיקון", "החלפת", "מומלץ", "השוואה", "יד 2", "סדרה"],
+        "measure": "אירועי המרה ב-GA4",
+        "requires": "מסלול פעולה: כרטיס מוצר או קישור לעמוד המרה",
+    },
+    "authority": {
+        "signals": ["שירות רשמי", "יבואן", "אחריות", "מי נותן", "הסמכה",
+                    "תקן", "מעבדה מוסמכת"],
+        "measure": "ציטוט במנועי AI וקישורים נכנסים",
+        "requires": "מקורות מאומתים, נרטיב קנוני, קישור לעמוד המותג",
+    },
+    "service": {
+        "signals": ["איך", "מדריך", "הוראות", "הפעלה", "התקנה", "ניקוי",
+                    "תחזוקה", "קוד", "שגיאה", "לא עובד", "לא מנקז", "לא מתחמם",
+                    "מצב שבת", "איפוס", "פירוק"],
+        "measure": "פתרון הבעיה. חיסכון בשיחות למוקד",
+        "requires": "אבחון אמיתי. אין חובת כפתור מכירה",
+    },
+}
+
+
+def page_intent(query):
+    """
+    כוונת העמוד קובעת איך הוא נמדד ומה נדרש ממנו.
+    לקח 2026-08-10: /סרטוני-הדרכה/ עם 7,031 צפיות ואפס אירועי המרה סומן
+    בטעות ככישלון. הוא עמוד service — הוא עשה את עבודתו כשלקוח התקין לבד
+    ולא התקשר למוקד. מדידה אחידה בהמרות מייצרת מסקנות שגויות.
+    """
+    q = query.lower()
+    hits = {k: sum(1 for s in v["signals"] if s in q)
+            for k, v in PAGE_INTENT.items()}
+    best = max(hits, key=lambda k: hits[k])
+    return best if hits[best] else "service"
+
+
 def classify(query):
     """
     blog      = יש אות כוונה (בעיה, פעולה, השוואה)
@@ -215,6 +256,7 @@ def opportunities(pages, ledger, blog_urls, site, limit=25):
             continue
         v = cannibalization_verdict(pages, query, blog_urls)
         out.append({"query": query, "kind": classify(query),
+                    "intent": page_intent(query),
                     "impressions": a["impressions"],
                     "clicks": a["clicks"], "best_position": round(a["best_pos"], 1),
                     **v})
@@ -293,6 +335,7 @@ def load_autocomplete(site, blog_urls, pages, ledger):
         if hit and hit[1] <= RANK_HELD:
             continue
         out.append({"query": q, "kind": "blog", "brand": brand,
+                    "intent": page_intent(q),
                     "impressions": 0, "clicks": 0, "best_position": None,
                     "verdict": "NEW", "source": "autocomplete",
                     "reason": "יהלום autocomplete — ביקוש שאיננו נוכחים בו ב-GSC כלל"})
@@ -534,7 +577,8 @@ PRICING = {
         "הערה": "ביקור בית רק למוצרים גדולים: כביסה, מייבש, מדיח, תנור, מקרר, כיריים",
     },
     "marom": {
-        "_pending": "מחיר ביקור לפי מותג — טרם התקבל מגיל. אל תנחש, שאל.",
+        "ביקור טכנאי בבית": "290 ₪ לכל המוצרים",
+        "חריג": "וייקינג ופיאבה — מחיר שונה, טרם התקבל. אל תנחש",
     },
 }
 
@@ -585,6 +629,7 @@ def phase_plan(site):
         "brand_hub_gaps": hub_gaps,
         "brand_hubs": brand_hubs,        # עמודי המותג הקיימים — חובה לקשר אליהם
         "pricing": PRICING.get(site, {}),   # שאלה מסחרית = תשובה במספר
+        "page_intent_rules": PAGE_INTENT,
         "conversion_rule": ("שאלה על מחיר או זמן חייבת תשובה עם המספר מ-pricing. "
                             "\"תלוי, פנו אלינו\" נחסם ב-EVASIVE_ANSWER."),
         "video_catalog_size": len(videos),
