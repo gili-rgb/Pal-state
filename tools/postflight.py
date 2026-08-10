@@ -375,6 +375,12 @@ def _inherited_bg(sel, bgmap, page_bg):
     נבדק מול לבן במקום מול הרקע הכהה של ההורה. התוצאה: **כל מאמר**
     שמשתמש ברכיב cta-box הסטנדרטי מהתבנית נכשל בשגיאה שגויה.
     """
+    # קודם הסלקטור המדויק כפי שהוא. הגרסה הקודמת קיצצה ::before/:hover
+    # לפני החיפוש, ולכן פספסה רקע שמוצהר על הסלקטור עצמו
+    # (".cta-primary:hover{background:#B81A21}") — נצפה 2026-08-09.
+    sel = sel.strip()
+    if sel in bgmap:
+        return bgmap[sel], "עצמי"
     base = sel.split(":")[0].strip()
     if base in bgmap:
         return bgmap[base], "עצמי"

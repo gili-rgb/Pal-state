@@ -544,7 +544,12 @@ def phase_plan(site):
 
     for o in allowed:
         o["video"] = match_video(o["query"], videos)
-    n_vid = sum(1 for o in allowed if o["video"])
+    # v1.6: התאמת וידאו רצה רק על allowed_topics. מאמר Refresh לא קיבל
+    # סרטון כלל, למרות ש-VIDEO_MISSING אמור לחול גם עליו (נצפה 2026-08-10).
+    for r in refresh:
+        q = r.get("existing_h1") or (r["triggers"][0]["query"] if r.get("triggers") else "")
+        r["video"] = match_video(q, videos) if q else None
+    n_vid = sum(1 for o in allowed if o["video"]) + sum(1 for r in refresh if r.get("video"))
 
     brief = {
         "site": site, "domain": SITES[site],
