@@ -821,10 +821,18 @@ def phase_plan(site):
     return 0
 
 
+# חובה: בלעדיהם אין דדופ ואין כרטיס Hero מאומת.
 REQUIRED_MCP = {
     "live_blog_titles": "כותרות /blog/ החיות — שכבת הדדופ השלישית",
     "products": "מוצרים לכרטיס Hero (permalink/מחיר/תמונה verbatim)",
-    "competitor_headings": "H2 של המתחרים — מזין את INFO_GAIN_DIFF",
+}
+
+# רצוי: משפר את המאמר אך אינו תנאי להגשה.
+# לקח 2026-08-10: competitor_headings היה ב-REQUIRED, ולכן סביבה בלי
+# web_search נתקעה — או ש-finalize נעצר, או שהיא סומנה DRAFT ו-postflight
+# חסם. `INFO_GAIN_DIFF` הוא WARN מלכתחילה, ואין היגיון שהמקור שלו יחסום.
+OPTIONAL_MCP = {
+    "competitor_headings": "H2 של המתחרים — מזין את INFO_GAIN_DIFF (WARN)",
 }
 
 
@@ -911,6 +919,11 @@ def phase_finalize(site, mcp_path, allow_degraded=False):
     brief["brand_hub"] = mcp.get("brand_hub")
     brief["verified_links"] = mcp.get("verified_links", [])
     brief["competitor_headings"] = mcp.get("competitor_headings", [])
+    missing_opt = [k for k in OPTIONAL_MCP if not mcp.get(k)]
+    if missing_opt:
+        for k in missing_opt:
+            print(f"ℹ️  {k} חסר — {OPTIONAL_MCP[k]}. לא חוסם.", file=sys.stderr)
+        brief["optional_missing"] = missing_opt
     brief["degraded"] = bool(missing)
     if missing:
         brief["degraded_missing"] = missing
