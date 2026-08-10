@@ -671,8 +671,27 @@ def phase_plan(site):
              "purpose": "H2 של המתחרים → competitor_headings, ל-INFO_GAIN_DIFF"},
         ],
     }
+    # v1.7: פיצול ל-brief רזה ולנספח כבד.
+    # ה-brief המלא היה 197KB (~90K טוקנים) — הסשן קרא אותו בשלמותו וזה
+    # מה שאכל את חלון הפלט וגרם ללחיצות "המשך" חוזרות (נצפה 2026-08-10).
+    # המודל צריך נושא אחד ואוצר מילים לבדיקה, לא 185 נושאים ו-6,235 מילים.
+    HEAVY = ("vocabulary", "allowed_topics", "refresh_queue", "brand_hub_gaps")
+    full = OUT / f"brief_full_{site}.json"
+    full.write_text(json.dumps(brief, ensure_ascii=False, indent=1), encoding="utf-8")
+
+    slim = {k: v for k, v in brief.items() if k not in HEAVY}
+    slim["allowed_topics"] = brief["allowed_topics"][:5]
+    slim["refresh_queue"] = brief["refresh_queue"][:3]
+    slim["brand_hub_gaps"] = brief["brand_hub_gaps"][:3]
+    slim["_full_brief"] = str(full)
+    slim["_counts"] = {"allowed_topics": len(brief["allowed_topics"]),
+                       "refresh_queue": len(brief["refresh_queue"]),
+                       "vocabulary": len(brief["vocabulary"])}
+    slim["_note"] = ("brief רזה. הרשימות המלאות ב-_full_brief. "
+                     "לבדיקת מונח: postflight קורא את המלא לבד — "
+                     "אל תטען אותו לקונטקסט.")
     p = OUT / f"brief_partial_{site}.json"
-    p.write_text(json.dumps(brief, ensure_ascii=False, indent=1), encoding="utf-8")
+    p.write_text(json.dumps(slim, ensure_ascii=False, indent=1), encoding="utf-8")
 
     print(f"✅ preflight plan | {site} | pal-lint {lint} | {len(ledger)} שורות ledger | "
           f"{len(pages)} עמודים | אוצר מילים {len(vocab)}")
@@ -680,7 +699,7 @@ def phase_plan(site):
     n_ac = len(allowed) - n_gsc
     print(f"\n📋 נושאים מותרים ({len(allowed)}): {n_gsc} מ-GSC, {n_ac} יהלומי autocomplete")
     print(f"   🎬 {n_vid} מהם עם סרטון מאומת מהערוץ ({len(videos)} בקטלוג)")
-    for o in allowed[:8]:
+    for o in allowed[:4]:
         if o["source"] == "gsc":
             print(f"   GSC  | {o['impressions']:6d} חשיפות | pos {o['best_position']:5.1f} | {o['query'][:48]}")
         else:
@@ -689,19 +708,20 @@ def phase_plan(site):
     dead_h = [h for h in brand_hubs if h["impressions"] < 100]
     print(f"\n🔗 עמודי מותג קיימים ({len(brand_hubs)}): {len(live_h)} עם תנועה, "
           f"{len(dead_h)} על אפס")
-    for h in brand_hubs[:5]:
+    for h in brand_hubs[:3]:
         print(f"   {h['impressions']:6d} חשיפות | {h['url'].split('.co.il')[-1][:38]}")
     if dead_h:
         print(f"   ⚠️  דורשים הזנת קישורים: "
               + ", ".join(h["url"].split("/brands/")[-1].rstrip("/") for h in dead_h[:6]))
     print(f"\n🏷️  פערי brand hub ({len(hub_gaps)}) — לא נושא בלוג:")
-    for o in hub_gaps[:4]:
+    for o in hub_gaps[:2]:
         print(f"   {o['impressions']:6d} | {o['query'][:45]}")
     print(f"\n🔄 תור Refresh ({len(refresh)}) — ממוין לפי פוטנציאל:")
-    for o in refresh[:6]:
+    for o in refresh[:3]:
         print(f"   {o['total_impressions']:7d} חשיפות | pos {o['best_position']:5.1f} | "
               f"{len(o['gap_queries']):2d} פערים | {o['url'].split('.co.il')[-1][:40]}")
-    print(f"\nנכתב: {p}")
+    print(f"\nנכתב: {p} ({p.stat().st_size // 1024}KB) "
+          f"| מלא: {full.name} ({full.stat().st_size // 1024}KB)")
     return 0
 
 
@@ -713,9 +733,10 @@ REQUIRED_MCP = {
 
 
 def phase_finalize(site, mcp_path, allow_degraded=False):
-    p = OUT / f"brief_partial_{site}.json"
+    full = OUT / f"brief_full_{site}.json"
+    p = full if full.exists() else OUT / f"brief_partial_{site}.json"
     if not p.exists():
-        die("brief_partial חסר. הרץ קודם --phase plan")
+        die("brief חסר. הרץ קודם --phase plan")
     brief = json.loads(p.read_text(encoding="utf-8"))
     mcp = json.loads(Path(mcp_path).read_text(encoding="utf-8"))
 
