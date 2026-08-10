@@ -204,6 +204,32 @@ PO.check_terms("<article><p>המגנטרון הפנימי</p></article>",
 check("TERM_VERIFY: מונח מומצא נתפס",
       "TERM_VERIFY" in rules("WARNS"), True)
 
+# ---------- EVASIVE_ANSWER (v1.11.0) ----------
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from pal_lint import check_evasive_answers, Report  # noqa: E402
+
+EVA = ('<article><h3>כמה עולה ביקור טכנאי מדיח כלים בוש?</h3>'
+       '<p>העלות תלויה בסוג המכשיר. לקבלת הצעת מחיר פותחים קריאת שירות.</p></article>')
+OKA = ('<article><h3>כמה עולה ביקור טכנאי מדיח כלים בוש?</h3>'
+       '<p>ביקור טכנאי עולה 349 ₪, לא כולל חלקים.</p></article>')
+TIME_EVA = ('<article><h3>תוך כמה זמן מגיע טכנאי?</h3>'
+            '<p>נשמח לעדכן בשיחה עם המוקד.</p></article>')
+TIME_OK = ('<article><h3>תוך כמה זמן מגיע טכנאי?</h3>'
+           '<p>טכנאי מגיע תוך 3 ימי עסקים באזור המרכז.</p></article>')
+NOT_COMMERCIAL = ('<article><h3>יש שירות בוש בחיפה?</h3>'
+                  '<p>כן, ברחוב ההסתדרות 224.</p></article>')
+
+for name, html, want in [
+    ("מחיר: תשובה מתחמקת נחסמת", EVA, 1),
+    ("מחיר: תשובה עם מספר עוברת", OKA, 0),
+    ("זמן: תשובה מתחמקת נחסמת", TIME_EVA, 1),
+    ("זמן: תשובה עם מספר עוברת", TIME_OK, 0),
+    ("שאלה לא מסחרית אינה נבדקת", NOT_COMMERCIAL, 0),
+]:
+    r = Report()
+    check_evasive_answers(html, r, "blog")
+    check(name, len(r.errors), want)
+
 if FAILED:
     print("\n🔴 test_postflight נכשל:")
     for f in FAILED:
