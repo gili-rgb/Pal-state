@@ -39,6 +39,29 @@ SITES = {
 # חפיפת שאילתות אינה אינדיקטור. המיקום הוא האינדיקטור.
 RANK_HELD = 20        # עמוד שמדורג מעל זה לא מחזיק את השאילתה
 RANK_STRONG = 4       # 4-20 = "שמור וחזק", לא ליצור מתחרה
+RANK_DOMINANT = 3     # 1-3 = שולטים. מאמר חדש יתחרה בנכס קיים
+
+# עמודי שותפים בדומיין שלנו. מדורגים היטב אך אינם נכסים שלנו לקישור —
+# pal_lint אוסר לקשר אליהם (FORBIDDEN_LINK). מקור: כללי הברזל.
+# בלי הרשימה הזו preflight המליץ לקשר לעמודים ש-postflight חוסם.
+PARTNER_PATHS = {
+    "csb": ["/bosch-service/", "/siemens-service/",
+            "/bosch-parts/", "/siemens-parts/"],
+    "marom": ["/sharp-parts/", "/sharp-service/", "/dedietrich-parts/",
+              "/dedietrich-service/", "/bauknecht-parts/", "/bauknecht-service/",
+              "/haier-parts/", "/haier-service/", "/blomberg-parts/",
+              "/blomberg-service/", "/delonghi-parts/", "/delonghi-service/",
+              "/amana-parts/", "/amana-service/", "/zanussi-parts/",
+              "/zanussi-service/"],
+    "plrom": ["/sauter-service/", "/liebherr-service/",
+              "/miele-service/", "/miele-parts/"],
+}
+
+
+def is_partner_page(url, site):
+    u = "/" + url.split(".co.il")[-1].lstrip("/")
+    return any(p.rstrip("/") == u.rstrip("/").split("#")[0]
+               for p in PARTNER_PATHS.get(site, []))
 MIN_IMPR = 30         # סף רעש לשאילתת יעד
 
 # שאילתות ניווט למותג שלנו. הן מדורגות מצוין בזכות דף הבית ואינן נושא לבלוג.
@@ -213,6 +236,21 @@ def rank_for_query(pages, query, scope=None):
     return best
 
 
+def dominant_page(pages, query, site=None):
+    """
+    העמוד שמדורג 1-3 על השאילתה, מכל סוג — לא רק בלוג.
+    לקח 2026-08-10: "חלקי חילוף למקרר שארפ" (19,558 חשיפות, מיקום 1.0,
+    CTR 8.7%) סומן NEW כי ה-scope היה מאמרי בלוג בלבד, ועמוד הקטגוריה
+    ששולט בשאילתה היה בלתי נראה. מאמר חדש שם היה מתחרה בנכס אמיתי.
+    """
+    best = rank_for_query(pages, query)      # ללא scope — כל סוגי העמודים
+    if not best or best[1] > RANK_DOMINANT:
+        return None
+    partner = site and is_partner_page(best[0], site)
+    return {"url": best[0], "position": round(best[1], 1),
+            "impressions": best[2], "partner": bool(partner)}
+
+
 def cannibalization_verdict(pages, query, blog_urls):
     """
     מיקום, לא אחוז חפיפה.
@@ -245,7 +283,7 @@ def opportunities(pages, ledger, blog_urls, site, limit=25):
             a["impressions"] += q["impressions"]
             a["clicks"] += q["clicks"]
             a["best_pos"] = min(a["best_pos"], q["position"])
-    out = []
+    out, dominated = [], []
     for query, a in agg.items():
         if query.lower() in covered:
             continue
@@ -254,6 +292,17 @@ def opportunities(pages, ledger, blog_urls, site, limit=25):
         blog_hit = rank_for_query(pages, query, scope=blog_urls)
         if blog_hit and blog_hit[1] <= RANK_STRONG:   # מאמר בלוג כבר מדורג מצוין
             continue
+        intent = page_intent(query)
+        dom = dominant_page(pages, query, site)
+        # עמוד שותף ששולט: אין לכתוב עליו מאמר מתחרה, אבל גם אסור
+        # לקשר אליו. הוא נרשם בנפרד כדי שנדע שהשאילתה תפוסה על ידי
+        # נכס שאינו שלנו — וזו הזדמנות לעמוד /brands/ במקומו.
+        if dom and intent == "conversion":
+            # שאילתה מסחרית שכבר במקום 1-3: העמוד הקיים עונה עליה טוב
+            # יותר ממאמר. הוא נכס לקשר אליו, לא נושא לשכפל.
+            dominated.append({"query": query, "impressions": a["impressions"],
+                              "clicks": a["clicks"], **dom})
+            continue
         v = cannibalization_verdict(pages, query, blog_urls)
         out.append({"query": query, "kind": classify(query),
                     "intent": page_intent(query),
@@ -261,7 +310,10 @@ def opportunities(pages, ledger, blog_urls, site, limit=25):
                     "clicks": a["clicks"], "best_position": round(a["best_pos"], 1),
                     **v})
     out.sort(key=lambda x: -x["impressions"])
-    return out[:limit]
+    dominated.sort(key=lambda x: -x["impressions"])
+    ours = [d for d in dominated if not d.get("partner")]
+    partner = [d for d in dominated if d.get("partner")]
+    return out[:limit], ours[:20], partner[:15]
 
 
 def h1_variant(pages, query):
@@ -610,7 +662,8 @@ def phase_plan(site):
     blog_urls = {r["url"] for r in ledger}
     brand_hubs = discover_brand_hubs(pages, brand_hubs_from_ledger(site))
     videos = load_video_catalog(site)
-    opps = opportunities(pages, ledger, blog_urls, site, limit=150)
+    opps, dominated, partner_dom = opportunities(
+        pages, ledger, blog_urls, site, limit=150)
     for o in opps:
         o.setdefault("source", "gsc")
     allowed = [o for o in opps if o["verdict"] == "NEW" and o["kind"] == "blog"]
@@ -645,6 +698,15 @@ def phase_plan(site):
         "allowed_topics": allowed,
         "refresh_queue": refresh,
         "brand_hub_gaps": hub_gaps,
+        # עמודים ששולטים בשאילתה מסחרית (מיקום 1-3). אסור לכתוב עליהם
+        # מאמר מתחרה. הם כתובת לקישור פנימי ממאמרים חדשים ומרועננים.
+        "dominant_pages": dominated,
+        "dominant_rule": ("אלה נכסים שלנו במקום 1-3. אל תכתוב מאמר על השאילתה "
+                          "שלהם, וקשר אליהם ממאמרים רלוונטיים כדי לחזק אותם."),
+        # שאילתות שתפוסות על ידי עמוד שותף בדומיין שלנו
+        "partner_dominated": partner_dom,
+        "partner_rule": ("עמודי שותפים. אסור לקשר אליהם (FORBIDDEN_LINK) ואין "
+                         "לכתוב עליהם מאמר מתחרה. ההזדמנות היא עמוד /brands/."),
         "brand_hubs": brand_hubs,        # עמודי המותג הקיימים — חובה לקשר אליהם
         "pricing": PRICING.get(site, {}),   # שאלה מסחרית = תשובה במספר
         "ai_agent": AI_AGENT.get(site),
@@ -736,6 +798,17 @@ def phase_plan(site):
     if dead_h:
         print(f"   ⚠️  דורשים הזנת קישורים: "
               + ", ".join(h["url"].split("/brands/")[-1].rstrip("/") for h in dead_h[:6]))
+    if partner_dom:
+        print(f"\n🤝 שאילתות שתפוסות ע\"י עמוד שותף ({len(partner_dom)}) — "
+              f"לא לקשר, לא לשכפל. הזדמנות ל-/brands/:")
+        for d in partner_dom[:3]:
+            print(f"   {d['impressions']:6d} חשיפות | pos {d['position']:4.1f} | "
+                  f"{d['query'][:28]:28s} → {d['url'].split('.co.il')[-1][:28]}")
+    if dominated:
+        print(f"\n👑 נכסים שלנו ששולטים ({len(dominated)}) — לקשר אליהם:")
+        for d in dominated[:3]:
+            print(f"   {d['impressions']:6d} חשיפות | pos {d['position']:4.1f} | "
+                  f"{d['query'][:30]:30s} → {d['url'].split('.co.il')[-1][:32]}")
     print(f"\n🏷️  פערי brand hub ({len(hub_gaps)}) — לא נושא בלוג:")
     for o in hub_gaps[:2]:
         print(f"   {o['impressions']:6d} | {o['query'][:45]}")

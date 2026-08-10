@@ -137,6 +137,45 @@ CONVERSION_TARGETS = ["/product/", "/cart", "myarea", "/צור-קשר", "/contac
                       "tel:", "/all-products"]
 
 
+def check_dominant_links(html, brief):
+    """
+    v8.11: עמוד ששולט בשאילתה מסחרית (מיקום 1-3) הוא נכס.
+    לקח 2026-08-10: "חלקי חילוף למקרר שארפ" — 19,558 חשיפות, מיקום 1.0,
+    CTR 8.7% — סומן כנושא פנוי כי הכלל בדק מאמרי בלוג בלבד. כתיבת מאמר
+    שם הייתה מתחרה בנכס.
+    ההכרעה: לא לשכפל את השאילתה, **כן לקשר אליו** ממאמרים חדשים
+    ומרועננים כדי לחזק אותו.
+    """
+    # רק נכסים שלנו. עמודי שותפים יושבים ב-partner_dominated ואסור
+    # לקשר אליהם (pal_lint חוסם ב-FORBIDDEN_LINK). preflight המליץ
+    # לקשר ל-/sharp-service/ שהוא עמוד שותף — סתירה שנתפסה 2026-08-10.
+    dom = [d for d in (brief.get("dominant_pages") or []) if not d.get("partner")]
+    if not dom:
+        return
+    o = matched_topic(html, brief) or {}
+    text = visible(html)
+    # רלוונטי = חולק לפחות שתי מילות תוכן עם נושא המאמר או עם גוף המאמר
+    def toks(t):
+        return {w for w in re.findall(r"[\u0590-\u05FF]{3,}", t)}
+    topic = toks(o.get("query", "") + " " + o.get("existing_h1", ""))
+    relevant = []
+    for d in dom:
+        dt = toks(d["query"])
+        if len(dt & topic) >= 2 or (len(dt) and all(w in text for w in list(dt)[:3])):
+            relevant.append(d)
+    if not relevant:
+        return
+    linked = [d for d in relevant if d["url"].split(".co.il")[-1].rstrip("/") in html]
+    if linked:
+        NOTES.append(f"קישור לעמוד ששולט: {len(linked)}/{len(relevant)}")
+        return
+    top = sorted(relevant, key=lambda d: -d["impressions"])[0]
+    warn("DOMINANT_LINK_MISSING",
+         f'עמוד שלנו שולט בשאילתה קרובה ולא מקושר: "{top["query"]}" '
+         f'(מיקום {top["position"]}, {top["impressions"]} חשיפות) — '
+         f'{top["url"]}. קישור אליו מחזק נכס קיים')
+
+
 def check_ai_channel(html, brief):
     """
     v8.9: הסטת עומס מהמוקד לערוץ ה-AI.
@@ -636,6 +675,7 @@ def main():
     check_video(html, brief)
     check_refresh(html, brief)
     check_conversion_path(html, brief)
+    check_dominant_links(html, brief)
     check_ai_channel(html, brief)
     check_click_to_call(html, brief)
     check_contrast(html)
