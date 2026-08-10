@@ -675,20 +675,43 @@ def phase_plan(site):
     # ה-brief המלא היה 197KB (~90K טוקנים) — הסשן קרא אותו בשלמותו וזה
     # מה שאכל את חלון הפלט וגרם ללחיצות "המשך" חוזרות (נצפה 2026-08-10).
     # המודל צריך נושא אחד ואוצר מילים לבדיקה, לא 185 נושאים ו-6,235 מילים.
-    HEAVY = ("vocabulary", "allowed_topics", "refresh_queue", "brand_hub_gaps")
+    # רק אוצר המילים באמת כבד (62KB) והוא כלי הצלבה של postflight,
+    # לא חומר קריאה. כל השאר נשאר שלם: גיל עובד אוטונומית ואינו אמור
+    # לבקש רשימה מלאה — הבחירה חייבת להיות שלמה מלכתחילה.
+    HEAVY = ("vocabulary",)
     full = OUT / f"brief_full_{site}.json"
     full.write_text(json.dumps(brief, ensure_ascii=False, indent=1), encoding="utf-8")
 
     slim = {k: v for k, v in brief.items() if k not in HEAVY}
+    # כל הנושאים נשארים, אבל רק השדות שדרושים לבחירה. הטקסטים הארוכים
+    # (reason, ranking_for המלא, all_domains) יורדים.
+    # פורמט טבלאי במקום 185 אובייקטים: שמות השדות חוזרים פעם אחת
+    # במקום 185 פעמים. אותם נתונים בדיוק, כשליש מהנפח.
+    slim["topics_columns"] = ["query", "intent", "impressions", "clicks",
+                              "position", "source", "video_id"]
+    slim["allowed_topics_table"] = [
+        [o["query"], o.get("intent", ""), o.get("impressions", 0),
+         o.get("clicks", 0), o.get("best_position"),
+         "AC" if o.get("source") == "autocomplete" else "GSC",
+         (o.get("video") or {}).get("video_id")]
+        for o in brief["allowed_topics"]]
+    # חמשת המובילים גם כאובייקטים מלאים, לנוחות הבחירה
     slim["allowed_topics"] = brief["allowed_topics"][:5]
-    slim["refresh_queue"] = brief["refresh_queue"][:3]
-    slim["brand_hub_gaps"] = brief["brand_hub_gaps"][:3]
-    slim["_full_brief"] = str(full)
-    slim["_counts"] = {"allowed_topics": len(brief["allowed_topics"]),
-                       "refresh_queue": len(brief["refresh_queue"]),
-                       "vocabulary": len(brief["vocabulary"])}
-    slim["_note"] = ("brief רזה. הרשימות המלאות ב-_full_brief. "
-                     "לבדיקת מונח: postflight קורא את המלא לבד — "
+    slim["refresh_queue"] = [
+        {**{k: v for k, v in r.items() if k in
+            ("url", "existing_h1", "total_impressions", "total_clicks",
+             "best_position", "frozen", "video")},
+         "gap_queries": r.get("gap_queries", []),
+         "ranking_for": r.get("ranking_for", [])[:5],
+         "triggers": [t["query"] for t in r.get("triggers", [])[:4]]}
+        for r in brief["refresh_queue"]]
+    slim["brand_hub_gaps"] = [
+        {k: v for k, v in o.items() if k in ("query", "impressions", "kind")}
+        for o in brief["brand_hub_gaps"]]
+    slim["_vocabulary_file"] = str(full)
+    slim["_vocabulary_size"] = len(brief["vocabulary"])
+    slim["_note"] = ("כל הנושאים כאן. אוצר המילים בלבד הוצא לקובץ נפרד — "
+                     "הוא כלי הצלבה של postflight ולא חומר קריאה. "
                      "אל תטען אותו לקונטקסט.")
     p = OUT / f"brief_partial_{site}.json"
     p.write_text(json.dumps(slim, ensure_ascii=False, indent=1), encoding="utf-8")
