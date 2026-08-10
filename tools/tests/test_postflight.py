@@ -204,6 +204,21 @@ PO.check_terms("<article><p>המגנטרון הפנימי</p></article>",
 check("TERM_VERIFY: מונח מומצא נתפס",
       "TERM_VERIFY" in rules("WARNS"), True)
 
+# ---------- כוונת עמוד ומסלול פעולה (v8.8) ----------
+BASE = '<article><h1>{}</h1>{}</article>'
+LINK = '<a href="https://csb.co.il/product/x/">מוצר</a>'
+
+for name, q, intent, extra, want in [
+    ("conversion בלי מסלול נחסם", "חלקי חילוף למדיח בוש", "conversion", "", 1),
+    ("conversion עם מסלול עובר", "חלקי חילוף למדיח בוש", "conversion", LINK, 0),
+    ("service בלי מסלול מותר", "מדיח בוש לא מנקז מים", "service", "", 0),
+    ("authority בלי מסלול מותר", "מי נותן שירות רשמי", "authority", "", 0),
+]:
+    reset()
+    PO.check_conversion_path(BASE.format(q, extra),
+                             {"allowed_topics": [{"query": q, "intent": intent}]})
+    check(name, len(PO.ERRORS), want)
+
 # ---------- EVASIVE_ANSWER (v1.11.0) ----------
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from pal_lint import check_evasive_answers, Report  # noqa: E402

@@ -118,6 +118,16 @@ if _cat_path.exists():
 else:
     print("ℹ️  youtube_catalog.json לא קיים — בדיקות וידאו דולגו")
 
+# ---------- סיווג כוונת עמוד (2026-08-10) ----------
+for q, want in [
+    ("כמה עולה תיקון מדיח בוש", "conversion"),
+    ("חלקי חילוף למקרר שארפ", "conversion"),
+    ("מי נותן שירות רשמי לבוש בישראל", "authority"),
+    ("מדיח בוש לא מנקז מים", "service"),
+    ("מצב שבת מקרר שארפ איך מפעילים", "service"),
+]:
+    check(f"intent: {q[:28]}", PF.page_intent(q), want)
+
 if FAILED:
     print("\n🔴 test_flight נכשל:")
     for f in FAILED:
