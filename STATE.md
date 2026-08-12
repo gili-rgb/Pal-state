@@ -1,5 +1,5 @@
 # PAL STATE
-עודכן: 2026-08-10 (v8.13, 108 כללים, 5 שערי CI, שישה מקורות מדידה)
+עודכן: 2026-08-10 (v8.14, pal-lint v1.11.1, 110 כללים, 5 שערי CI, שישה מקורות מדידה)
 
 > כללי ברזל (NAP, קישורים אסורים, טרמינולוגיה, פרוטוקול SKILL, Yoast) חיים בזיכרון המובנה. לא משוכפלים כאן.
 
@@ -9,18 +9,19 @@
 
 | סקיל | גרסה | סטטוס | פתוח |
 |------|------|-------|------|
-| content-machine | **v8.13** | מותקן. נהג של preflight/postflight | ריצת אימות ראשונה בוצעה; מאמר Refresh פורסם 2026-08-10 |
+| content-machine | **v8.14** | מותקן. נהג של preflight/postflight | ריצת אימות ראשונה בוצעה; מאמר Refresh פורסם 2026-08-10 |
 | brand-hub-machine | v1.17 | מותקן, **לא עודכן לארכיטקטורת v8** | לא מכיר preflight/postflight/BRAND_SAMEAS/קטלוג וידאו |
 | product-page-machine | v7.0 | מותקן, **לא עודכן לארכיטקטורת v8** | אותו פער |
 | ai-visibility-audit | v1.1 | פעיל | baseline 2026-07-08. לא נמדד מחדש |
 | off-site-radar | v1.0 | פעיל | baseline 2026-07-08 |
-| pal-lint (tools/) | **v1.11.0** | selftest ירוק | 108 כללים (עם postflight) |
+| pal-lint (tools/) | **v1.11.1** | selftest ירוק | 108 כללים (עם postflight) |
 | preflight.py (tools/) | v1.7 | brief רזה 41KB + מלא | allowed_topics, refresh_queue, dominant_pages, partner_dominated, pricing, ai_agent, intent |
 | postflight.py (tools/) | v1.4 | שער יציאה | EVASIVE_ANSWER, NO_CONVERSION_PATH, AI_CHANNEL, DOMINANT_LINK, REFRESH_* |
 | ledger_lint, version_guard, ledger_merge | v1.0 | ב-CI | 5 שערים על כל push |
 | ai_visibility_pull, ga_pull, bing_ai_presence, gbp_analyze, youtube_pull | — | ב-pal-gsc-data | שישה מקורות מדידה, קרון אוטומטי |
 
 ### לקחי גרסה אחרונים (תקציר — הפירוט בזיכרון ובראש כל SKILL)
+- **2026-08-10 (ריצה מוצלחת ראשונה):** מאמר Refresh למרום (`/חלקי-חילוף-למקרר-שארפ/`) עבר את השרשרת המלאה: preflight → finalize → postflight ירוק. שכבת הדדופ תפסה כפילות 100% והפכה מאמר חדש ל-Refresh. נוספו למאמר: דנה (AI channel), `sameAs` לשארפ, וטבלת מחירים במקום "פנו אלינו". **שתי לחיצות "המשך" בלבד** אחרי צמצום ה-brief.
 - **2026-08-10 (מדידה): השרשרת נסגרה.** שישה מדדים אוטומטיים: `ai_visibility` (Gemini, 11/15), `ai_presence` (Bing מול GSC — למה לא מצוטטים), GSC, GA4 (המרות), GBP (5,637 שיחות בחודשיים ל-CSB), קטלוג יוטיוב. **הממצא המרכזי:** מנצחים 5/5 בשאילתות מותג, מפסידים 0/4 בטכניות; עמודי מוצר ממירים 30-37% ומאמרי תוכן אפס; פי 2.5 יותר אנשים מתקשרים מאשר נכנסים לאתר.
 - **2026-08-10 (הכרעות גיל):** (1) לא כל עמוד חייב להמיר — סיווג `conversion`/`authority`/`service`, וכל אחד נמדד אחרת. (2) המטרה להסיט שיחות מהמוקד לנציגת ה-AI, לא להגדיל אותן. (3) עמוד שמדורג 1-3 הוא נכס לקשר אליו, לא נושא לשכפל. (4) **לעולם לא לקשר לעמודי שותפים** — מותר לקחת מהם מילות מפתח בלבד.
 - **2026-08-10 (לקח תהליכי):** שלוש פעמים הוספתי מנגנון בלי לבדוק אותו מול כללים קיימים, ונוצרה סתירה. `test_flight` מריץ עכשיו כל URL שה-brief ממליץ עליו דרך `pal_lint` האמיתי.
