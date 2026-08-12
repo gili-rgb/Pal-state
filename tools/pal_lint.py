@@ -32,7 +32,10 @@ from pathlib import Path
 #  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
 #  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
 #  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
-VERSION = "1.11.0"
+VERSION = "1.11.1"
+# v1.11.1 (2026-08-10): EVASIVE_ANSWER לא זיהה גרשיים עברי (U+05F4) —
+#   "ש״ח" נכשל למרות מספר אמיתי בתשובה. נוסף גם TEL_FORMAT: href="tel:"
+#   עם מקפים עלול לא לעבוד בחלק מהמכשירים.
 # v1.11.0 (2026-08-10): EVASIVE_ANSWER (ERROR) — שאלה מסחרית חייבת מספר בתשובה.
 #   הרקע: מאמר Refresh על עמוד עם 73,539 חשיפות במיקום 5.2 ו-CTR 0.25% ענה
 #   על "כמה עולה ביקור טכנאי" ב"העלות תלויה, פתחו קריאת שירות". זו הפניה
@@ -831,6 +834,16 @@ EVASION = [
 ]
 
 
+def check_tel_format(html, rep, doc_type):
+    """v1.11.1: href="tel:" עם מקפים אינו אמין בכל המכשירים."""
+    for m in re.finditer(r'href="tel:([^"]+)"', html):
+        v = m.group(1)
+        if re.search(r"[-\s()]", v):
+            rep.warn("TEL_FORMAT",
+                     f'href="tel:{v}" מכיל מקפים. השתמש בספרות בלבד '
+                     f'({re.sub(chr(92)+"D", "", v)}); הטקסט הגלוי יכול להישאר עם מקפים')
+
+
 def check_evasive_answers(html, rep, doc_type):
     """
     v1.11.0: שאלה מסחרית בלי מספר בתשובה.
@@ -849,8 +862,10 @@ def check_evasive_answers(html, rep, doc_type):
         if not any(c in qt for c in COMMERCIAL_Q):
             continue
         at = visible_text(a)
-        has_number = re.search(r"\d{2,}\s*(?:₪|ש\"ח|שקל)|₪\s*\d{2,}"
-                               r"|\d+\s*(?:ימי עסקים|ימים|שעות|שבועות)", at)
+        # ש״ח בגרשיים עברי (U+05F4) ובגרש כפול ASCII — שניהם תקפים בתוכן קיים
+        has_number = re.search(
+            "\\d{2,}\\s*(?:₪|ש[\"\u05f4\u2033]ח|שקל)|₪\\s*\\d{2,}"
+            "|\\d+\\s*(?:ימי עסקים|ימים|שעות|שבועות)", at)
         if has_number:
             continue
         why = next((e for e in EVASION if e in at), None)
@@ -922,6 +937,7 @@ def run(path, site=None, doc_type=None, keyword=None):
     check_bauknecht(html, rep, doc_type)
     check_brand_hub_link(html, rep, site, doc_type)
     check_evasive_answers(html, rep, doc_type)
+    check_tel_format(html, rep, doc_type)
     check_brand_sameas(html, rep, doc_type)
     check_h1_listicle(html, rep, doc_type)
     check_plrom_name(html, rep, site, doc_type)
