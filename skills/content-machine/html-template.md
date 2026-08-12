@@ -1,4 +1,4 @@
-# תבנית HTML v7.11 — מוכנה להטמעה בווידג'ט HTML של Elementor
+# תבנית HTML v7.12 — מוכנה להטמעה בווידג'ט HTML של Elementor
 
 > **v7.9 (2026-08-03):** **ישות `Product` הוסרה מה-@graph.** התבנית עדיין הציגה "6 entities, או 7 עם כרטיס מוצר" וכללה בלוק Product מלא — סתירה מול SKILL v7.15+ שקובע 6 ישויות תמיד, ומול pal-lint שאוכף `SCHEMA_PRODUCT_BLOG` כ-ERROR. דריפט בן שלוש גרסאות שנתפס באודיט v7.18. `mentions` מצביע על Brand בלבד.
 
@@ -159,8 +159,8 @@
 .call-strip a.tel:hover { background: #2E2D38; color: #fff !important; }
 .call-strip a.tel:focus-visible { outline: 3px solid #D01F26; outline-offset: 2px; }
 .cta-primary:hover { background: #974503; color: #fff !important; border-bottom: none !important; }
-.cta-secondary { background: transparent; color: #fff !important; padding: 12px 28px; border-radius: 8px; font-weight: 700; text-decoration: none; border: 2px solid #fff; display: inline-block; }
-.cta-secondary:hover { background: rgba(255,255,255,0.1); color: #fff !important; border-bottom: none !important; }
+.cta-secondary { background: #140C3C; color: #fff !important; padding: 12px 28px; border-radius: 8px; font-weight: 700; text-decoration: none; border: 2px solid #fff; display: inline-block; }
+.cta-secondary:hover { background: #241751; color: #fff !important; border-bottom: none !important; }
 .cta-box a:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 
 .sources-list { background: #f6f8f9; border: 1px solid #dde3e7; border-radius: 8px; padding: 15px 20px; margin: 25px 0; font-size: 14px; }
@@ -177,7 +177,7 @@
 .video-container iframe { position: absolute; top: 0; right: 0; width: 100%; height: 100%; border: none; }
 
 .bh-pref-mini { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; color: #4b5860; margin: 20px 0 0; padding-top: 14px; border-top: 1px solid #dde3e7; }
-.bh-pref-mini .star { color: #ef9f0a; flex-shrink: 0; font-size: 18px; }
+.bh-pref-mini .star { color: #A05F00; flex-shrink: 0; font-size: 18px; }
 .bh-pref-mini-txt { flex: 1; min-width: 160px; }
 .bh-pref-mini a.add { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; color: #B55304 !important; text-decoration: none !important; border: 1.5px solid #B55304; border-radius: 7px; padding: 7px 14px; white-space: nowrap; transition: background 0.2s, color 0.2s; border-bottom: 1.5px solid #B55304 !important; }
 .bh-pref-mini a.add:hover { background: #B55304; color: #fff !important; }
@@ -396,6 +396,12 @@
 ```
 
 **לפלרום אין נציגת AI** — `brief.ai_agent` יחזיר `null`, ואז מוצג המוקד בלבד. הצבעים כאן הם של מרום; החלף לפי טבלת הצבעים של האתר.
+
+
+**שני כללי CSS שנובעים מבדיקת הניגודיות (v7.12):**
+
+1. **`.bh-pref-mini .star` = `#A05F00`** ולא ערך ה-warning הרגיל. `#E08A00` על לבן הוא 2.69:1 ונכשל ב-WCAG; `#A05F00` הוא 5.08:1.
+2. **`.cta-secondary` מקבל רקע מפורש זהה להורה** (`#140C3C`) ולא `transparent`. הבודק אינו פותר ירושה לסלקטור שטוח, ורקע מפורש גם נכון סמנטית וגם עובר.
 
 ## Schema @graph — שלד (6 entities תמיד)
 
