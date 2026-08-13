@@ -12,6 +12,7 @@ pal_lint בודק את הקובץ מול כללים. postflight בודק את ה
   H2_QUESTION_RATIO  אחוז H2 שאלה. WARN מתחת ל-40%, לעולם לא חוסם
   CITATION_COUNT     פחות מ-3 קפסולות עם מקור (ERROR)
   SEO_TITLE          חסר, זהה ל-H1, או מעל 60 תווים (ERROR)
+  DOMINANT_H1_DUPLICATE  ה-H1 משכפל שאילתה שעמוד שלנו מחזיק במיקום 1-3 (ERROR)
   LEDGER_ROW         מייצר את שורת הלדג'ר אוטומטית
 
 שימוש:
@@ -174,6 +175,77 @@ def check_dominant_links(html, brief):
          f'עמוד שלנו שולט בשאילתה קרובה ולא מקושר: "{top["query"]}" '
          f'(מיקום {top["position"]}, {top["impressions"]} חשיפות) — '
          f'{top["url"]}. קישור אליו מחזק נכס קיים')
+
+
+def _content_words(text):
+    """מילות תוכן לצורך השוואת H1: עברית או אנגלית, שלושה תווים ומעלה,
+    בלי מילות קישור, אחרי נטרול תחיליות."""
+    out = []
+    for w in re.findall(r"[\u0590-\u05FFa-zA-Z]{3,}", text):
+        if w in STOP:
+            continue
+        sw = strip_prefix(w)
+        if len(sw) >= 3 and sw not in out:
+            out.append(sw)
+    return out
+
+
+def _same_word(a, b):
+    """הכלה דו-כיוונית. "מקרר" מול "למקרר" הן אותה מילה גם כשנטרול
+    התחילית מסיר אות אחת בצד אחד בלבד."""
+    return a in b or b in a
+
+
+def _norm_url(u):
+    return re.sub(r"^https?://", "", (u or "").strip()).rstrip("/")
+
+
+def check_dominant_h1(html, brief):
+    """
+    v1.5: DOMINANT_H1_DUPLICATE. עמוד שלנו במיקום 1-3 הוא נכס, ולא נושא לכתוב עליו.
+    check_dominant_links כבר בדק שמקשרים אליו, אבל הוא רק מתריע. כאן חוסמים.
+
+    לקח 2026-08-13: שני מאמרי שארפ במרום נכתבו על "חלקי חילוף למקרר שארפ",
+    אשכול שעמודי product-category שלנו מחזיקים במיקום 1.0-1.5 עם 19,687 חשיפות.
+    שני המאמרים נשארו על אפס חשיפות. dominant_pages כבר היה ב-brief באותו רגע,
+    אבל הוא רק המליץ לקשר, ולכן אף שער לא עצר את הכתיבה.
+
+    חריג יחיד: Refresh של אותו עמוד דומיננטי עצמו. שם ה-H1 אמור לכתוב על
+    השאילתה, זה בדיוק העמוד שמחזיק אותה.
+    """
+    dom = []
+    for d in (brief.get("dominant_pages") or []):
+        if d.get("partner"):
+            continue
+        try:
+            if float(d.get("position", 99)) <= 3.0:
+                dom.append(d)
+        except (TypeError, ValueError):
+            continue
+    if not dom:
+        return
+    m = re.search(r"<h1[^>]*>(.*?)</h1>", html, flags=re.S | re.I)
+    if not m:
+        return
+    h1_words = _content_words(visible(m.group(1)).strip())
+    if not h1_words:
+        return
+    o = matched_topic(html, brief) or {}
+    refreshing = _norm_url(o["url"]) if o.get("mode") == "REFRESH" and o.get("url") else None
+    for d in dom:
+        if refreshing and refreshing == _norm_url(d.get("url")):
+            continue
+        qw = _content_words(d.get("query", ""))
+        if len(qw) < 2:
+            continue
+        if all(any(_same_word(q, h) for h in h1_words) for q in qw):
+            err("DOMINANT_H1_DUPLICATE",
+                f'ה-H1 כותב על השאילתה "{d["query"]}", שעמוד שלנו כבר מחזיק '
+                f'במיקום {d["position"]} עם {d.get("impressions", 0)} חשיפות: '
+                f'{d["url"]}. מאמר נוסף על אותה שאילתה מתחרה בנכס קיים ונשאר '
+                f'על אפס חשיפות. בחר אשכול פנוי במיקום 4-20, או קשר לעמוד '
+                f'הקיים במקום לשכפל אותו.')
+            return
 
 
 def check_ai_channel(html, brief):
@@ -676,6 +748,7 @@ def main():
     check_refresh(html, brief)
     check_conversion_path(html, brief)
     check_dominant_links(html, brief)
+    check_dominant_h1(html, brief)
     check_ai_channel(html, brief)
     check_click_to_call(html, brief)
     check_contrast(html)

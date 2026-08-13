@@ -17,14 +17,35 @@ exit 0 = תקין. exit 1 = יש שורה פסולה.
   ERROR DUP_URL          — אותו URL מופיע פעמיים בלדג'ר
   WARN  SINGLE_QUERY     — שאילתה אחת בלבד; שער ה-dedup חלש בשורה כזו
   WARN  NO_GSC_DATA      — סומן ידנית כ"אין נתונים", מותר אבל נספר
+  WARN  STALE_NOT_YET    — שורה מסומנת "טרם צבר" שעברו מאז הפרסום יותר
+                           מ-90 יום. "טרם צבר" הוא מצב זמני, לא סיווג קבוע:
+                           אחרי רבעון בלי חשיפות זה ממצא ולא המתנה
 """
 import re
 import sys
 from collections import Counter
+from datetime import date
 from pathlib import Path
 
 EMPTY = {"—", "-", "", "–", "TBD", "tbd"}
 NO_DATA = {"אין נתונים", "טרם נמדד"}
+STALE_DAYS = 90
+NOT_YET = re.compile(r"טרם צבר \((\d{4})-(\d{2})\)")
+
+
+def not_yet_age(cells):
+    """גיל השורה בימים, אם היא מסומנת "טרם צבר". אחרת None.
+
+    תאריך הפרסום נלקח מהעמודה הראשונה. אם היא אינה YYYY-MM-DD (שורה ישנה
+    שלא עברה את סבב מילוי התאריכים), נופלים חזרה לחודש שבסוגריים.
+    """
+    m = NOT_YET.search(cells[-1] if cells else "")
+    if not m:
+        return None
+    d = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", cells[0].strip() if cells else "")
+    pub = (date(int(d.group(1)), int(d.group(2)), int(d.group(3))) if d
+           else date(int(m.group(1)), int(m.group(2)), 1))
+    return (date.today() - pub).days
 
 
 def parse(path: Path):
@@ -63,6 +84,11 @@ def main() -> int:
             nodata += 1
             warns.append((r["line"], "NO_GSC_DATA", f'סומן ללא נתוני GSC: {r["url"][:70]}'))
             continue
+        age = not_yet_age(r["cells"])
+        if age is not None and age > STALE_DAYS:
+            warns.append((r["line"], "STALE_NOT_YET",
+                          f'מסומן "טרם צבר" כבר {age} יום. מעל {STALE_DAYS} יום '
+                          f'זה ממצא, לא המתנה: {r["url"][:70]}'))
         if "," in q and ";" not in q:
             errors.append((r["line"], "BAD_SEPARATOR",
                            f'שאילתות מופרדות בפסיק, נדרש ";": {q[:60]}'))
