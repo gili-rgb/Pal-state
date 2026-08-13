@@ -1,5 +1,5 @@
 # PAL STATE
-עודכן: 2026-08-13 (v8.14, pal-lint v1.11.1, 110 כללים, 5 שערי CI, שישה מקורות מדידה)
+עודכן: 2026-08-13 (v8.14, pal-lint v1.11.1, 110 כללים, 6 שערי CI, שישה מקורות מדידה)
 
 > כללי ברזל (NAP, קישורים אסורים, טרמינולוגיה, פרוטוקול SKILL, Yoast) חיים בזיכרון המובנה. לא משוכפלים כאן.
 
@@ -16,11 +16,13 @@
 | off-site-radar | v1.0 | פעיל | baseline 2026-07-08 |
 | pal-lint (tools/) | **v1.11.1** | selftest ירוק | 108 כללים (עם postflight) |
 | preflight.py (tools/) | v1.7 | brief רזה 41KB + מלא | allowed_topics, refresh_queue, dominant_pages, partner_dominated, pricing, ai_agent, intent |
-| postflight.py (tools/) | v1.4 | שער יציאה | EVASIVE_ANSWER, NO_CONVERSION_PATH, AI_CHANNEL, DOMINANT_LINK, REFRESH_* |
-| ledger_lint, version_guard, ledger_merge | v1.0 | ב-CI | 5 שערים על כל push |
+| postflight.py (tools/) | **v1.5** | שער יציאה | EVASIVE_ANSWER, NO_CONVERSION_PATH, AI_CHANNEL, DOMINANT_LINK, **DOMINANT_H1_DUPLICATE**, REFRESH_* |
+| ledger_lint (v1.1, STALE_NOT_YET), version_guard, ledger_merge, ledger_patch | v1.0-1.1 | ב-CI | **6 שערים** על כל push: ledger_lint, selftest, test_flight, test_postflight, test_ledger_tools, version_guard |
 | ai_visibility_pull, ga_pull, bing_ai_presence, gbp_analyze, youtube_pull | — | ב-pal-gsc-data | שישה מקורות מדידה, קרון אוטומטי |
 
 ### לקחי גרסה אחרונים (תקציר — הפירוט בזיכרון ובראש כל SKILL)
+- **תיעוד שינויים בכלים חי ב-`tools/CHANGELOG-tools.md`** (מ-2026-08-13). שינוי ב-tools/ אינו מזיז את גרסת content-machine ואינו נוגע ב-SKILL.md.
+- **2026-08-13 (שני שערים חדשים):** `DOMINANT_H1_DUPLICATE` ב-postflight v1.5 חוסם H1 שמשכפל שאילתה שעמוד שלנו מחזיק במיקום 1-3 (הרקע: שני מאמרי שארפ במרום על אשכול במיקום 1.0 עם 19,687 חשיפות, שניהם על אפס). `STALE_NOT_YET` ב-ledger_lint מתריע על שורת "טרם צבר" מעל 90 יום. שער CI שישי: `test_ledger_tools`.
 - **2026-08-10 (ריצה מוצלחת ראשונה):** מאמר Refresh למרום (`/חלקי-חילוף-למקרר-שארפ/`) עבר את השרשרת המלאה: preflight → finalize → postflight ירוק. שכבת הדדופ תפסה כפילות 100% והפכה מאמר חדש ל-Refresh. נוספו למאמר: דנה (AI channel), `sameAs` לשארפ, וטבלת מחירים במקום "פנו אלינו". **שתי לחיצות "המשך" בלבד** אחרי צמצום ה-brief.
 - **2026-08-10 (מדידה): השרשרת נסגרה.** שישה מדדים אוטומטיים: `ai_visibility` (Gemini, 11/15), `ai_presence` (Bing מול GSC — למה לא מצוטטים), GSC, GA4 (המרות), GBP (5,637 שיחות בחודשיים ל-CSB), קטלוג יוטיוב. **הממצא המרכזי:** מנצחים 5/5 בשאילתות מותג, מפסידים 0/4 בטכניות; עמודי מוצר ממירים 30-37% ומאמרי תוכן אפס; פי 2.5 יותר אנשים מתקשרים מאשר נכנסים לאתר.
 - **2026-08-10 (הכרעות גיל):** (1) לא כל עמוד חייב להמיר — סיווג `conversion`/`authority`/`service`, וכל אחד נמדד אחרת. (2) המטרה להסיט שיחות מהמוקד לנציגת ה-AI, לא להגדיל אותן. (3) עמוד שמדורג 1-3 הוא נכס לקשר אליו, לא נושא לשכפל. (4) **לעולם לא לקשר לעמודי שותפים** — מותר לקחת מהם מילות מפתח בלבד.
