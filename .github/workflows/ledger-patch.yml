@@ -1,0 +1,59 @@
+name: Ledger Patch
+
+# עדכון שורות קיימות ב-content-ledger.md בלי לדחוף 30KB בכל פעם.
+# ledger-patch.md נדחף → ledger_patch.py מחיל לפי URL → ledger_lint שומר על השער.
+# אם הלינט נכשל, שום דבר לא נדחף והלדג'ר נשאר כפי שהיה.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ledger-patch.md'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ledger-patch
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Apply patch
+        run: python tools/ledger_patch.py
+
+      - name: Ledger lint (שער — לא ממזגים לדג'ר שבור)
+        run: python tools/ledger_lint.py content-ledger.md
+
+      - name: Commit & push (עם rebase ו-retry)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config pull.rebase true
+          git add content-ledger.md ledger-patch.md 2>/dev/null || true
+          git diff --staged --quiet && echo "אין שינוי" && exit 0
+          git commit -m "ledger patch (automated) $(date -u +%Y-%m-%d)"
+          for i in 1 2 3; do
+            if git push 2>/tmp/e; then echo "נדחף בניסיון $i"; exit 0; fi
+            cat /tmp/e
+            if grep -qi "rule violation\|protected branch\|push protection\|permission to" /tmp/e; then
+              echo "::error::נדחה מסיבה שאינה התנגשות"
+              exit 1
+            fi
+            git pull --rebase --autostash origin main || exit 1
+            sleep $((i * 5))
+          done
+          echo "::error::push נכשל"
+          exit 1
