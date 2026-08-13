@@ -219,6 +219,59 @@ for name, q, intent, extra, want in [
                              {"allowed_topics": [{"query": q, "intent": intent}]})
     check(name, len(PO.ERRORS), want)
 
+# ---------- DOMINANT_H1_DUPLICATE (v1.5) ----------
+# הממצא שהוליד את הכלל: שני מאמרי שארפ נכתבו על אשכול שעמוד
+# product-category שלנו מחזיק במיקום 1.0, ושניהם נשארו על אפס חשיפות.
+DOM_URL = "https://marom-serv.co.il/product-category/חלקי-חילוף-מקרר-שארפ/"
+
+
+def dom_brief(position=1.0, partner=False, refresh_h1=None):
+    b = {"dominant_pages": [{"query": "חלקי חילוף למקרר שארפ", "url": DOM_URL,
+                             "position": position, "impressions": 19687,
+                             "clicks": 1712, "partner": partner}],
+         "allowed_topics": [], "refresh_queue": []}
+    if refresh_h1:
+        b["refresh_queue"] = [{"url": DOM_URL, "existing_h1": refresh_h1,
+                               "total_impressions": 19687, "gap_queries": [],
+                               "ranking_for": [], "triggers": []}]
+    return b
+
+
+DUP_H1 = "<article><h1>מקרר שארפ 4 דלתות: 5 חלקי החילוף שנשברים הכי הרבה</h1></article>"
+FAR_H1 = "<article><h1>מצב שבת במקרר שארפ: איך מפעילים</h1></article>"
+
+reset()
+PO.check_dominant_h1(DUP_H1, dom_brief(position=1.0))
+check("H1 על אשכול במיקום 1.0 נחסם", "DOMINANT_H1_DUPLICATE" in rules(), True)
+
+reset()
+PO.check_dominant_h1(DUP_H1, dom_brief(position=4.2))
+check("H1 על אשכול במיקום 4.2 עובר", len(PO.ERRORS), 0)
+
+reset()
+PO.check_dominant_h1(FAR_H1, dom_brief(position=1.0))
+check("H1 לא קשור עובר", len(PO.ERRORS), 0)
+
+reset()
+PO.check_dominant_h1(DUP_H1, {"allowed_topics": [], "refresh_queue": []})
+check("brief בלי dominant_pages לא חוסם", len(PO.ERRORS), 0)
+
+reset()
+PO.check_dominant_h1(DUP_H1, dom_brief(position=1.0, partner=True))
+check("רשומת partner לא חוסמת", len(PO.ERRORS), 0)
+
+# Refresh של העמוד הדומיננטי עצמו: matched_topic מזהה REFRESH דרך
+# refresh_queue.existing_h1, ולא דרך allowed_topics.
+SELF_H1 = "חלקי חילוף למקרר שארפ: המדריך המלא"
+reset()
+PO.check_dominant_h1(f"<article><h1>{SELF_H1}</h1></article>",
+                     dom_brief(position=1.0, refresh_h1=SELF_H1))
+check("Refresh של אותו עמוד דומיננטי עובר", len(PO.ERRORS), 0)
+
+reset()
+PO.check_dominant_h1(f"<article><h1>{SELF_H1}</h1></article>", dom_brief(position=1.0))
+check("אותו H1 בלי Refresh כן נחסם", "DOMINANT_H1_DUPLICATE" in rules(), True)
+
 # ---------- EVASIVE_ANSWER (v1.11.0) ----------
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from pal_lint import check_evasive_answers, Report  # noqa: E402
