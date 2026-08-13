@@ -32,5 +32,8 @@ jobs:
       - name: Postflight tests
         run: python tools/tests/test_postflight.py
 
+      - name: Ledger tools tests
+        run: python tools/tests/test_ledger_tools.py
+
       - name: Version guard
         run: python tools/version_guard.py
