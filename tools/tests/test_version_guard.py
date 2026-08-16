@@ -44,7 +44,7 @@ def check(name, got, want):
         FAILED.append(f"{name}: קיבלתי {got!r}, ציפיתי {want!r}")
 
 
-def sandbox(skill_entries, changelog_entries):
+def sandbox(skill_entries, changelog_entries, extra=""):
     """ריפו מינימלי: SKILL.md, CHANGELOG.md, STATE.md ושלושת הכלים שהשער דורש."""
     d = Path(tempfile.mkdtemp(prefix="version_guard_"))
     (d / "tools").mkdir()
@@ -67,8 +67,8 @@ def sandbox(skill_entries, changelog_entries):
         "# תבנית\n@graph של 6 entities תמיד.\n", encoding="utf-8")
     for site in ("csb", "marom", "plrom"):
         (sk / f"project-{site}.md").write_text(
-            f"# {site}\n\n## משפטים קנוניים\nמשפט.\n\n"
-            '```json\n{"@type": "Organization", "sameAs": ["https://example.com"]}\n```\n',
+            f"# {site}\n\n## משפטים קנוניים\nמשפט.\n" + (extra if site == "marom" else "") +
+            '\n```json\n{"@type": "Organization", "sameAs": ["https://example.com"]}\n```\n',
             encoding="utf-8")
     (d / "STATE.md").write_text(STATE, encoding="utf-8")
     return d
@@ -128,6 +128,28 @@ check("לא נשבר: VERSION_REGRESSION עדיין יורה", "VERSION_REGRESSI
 d = sandbox([], [ENTRY_OLD])
 code, out = run(d)
 check("לא נשבר: VERSION_UNLOGGED עדיין יורה", "VERSION_UNLOGGED" in out, True)
+
+# ---------- placeholder פתוח בקובץ מקור אמת ----------
+d = sandbox([ENTRY_CUR], [ENTRY_CUR, ENTRY_OLD],
+            extra="- **sameAs:** [גיל: אם יש לינקדאין, הוסף URL]\n")
+code, out = run(d)
+check("placeholder: [גיל: נחסם", "OPEN_PLACEHOLDER" in out, True)
+check("placeholder: exit 1", code, 1)
+check("placeholder: ההודעה נוקבת בקובץ", "project-marom.md" in out, True)
+
+d = sandbox([ENTRY_CUR], [ENTRY_CUR, ENTRY_OLD],
+            extra="- **sameAs:** אין, וזו החלטה ולא פער.\n")
+code, out = run(d)
+check("placeholder: החלטה מפורשת עוברת", "OPEN_PLACEHOLDER" in out, False)
+check("placeholder: exit 0", code, 0)
+
+# אזכור בתוך backticks הוא תיעוד הכלל, לא שימוש. הכלל תפס את רשומת
+# ה-changelog של עצמו בריצה הראשונה, ולכן זו בדיקת רגרסיה ולא הידור.
+d = sandbox([ENTRY_CUR], [ENTRY_CUR, ENTRY_OLD],
+            extra="הכלל נופל על `[גיל:` בכל קובץ סקיל.\n")
+code, out = run(d)
+check("placeholder: אזכור ב-backticks הוא תיעוד ולא נחסם", "OPEN_PLACEHOLDER" in out, False)
+check("placeholder: תיעוד exit 0", code, 0)
 
 if FAILED:
     print("\n🔴 test_version_guard נכשל:")
