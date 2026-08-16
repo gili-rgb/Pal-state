@@ -35,6 +35,9 @@ jobs:
       - name: Ledger tools tests
         run: python tools/tests/test_ledger_tools.py
 
+      - name: Can publish (smoke)
+        run: python tools/tests/test_can_publish.py
+
       - name: Version guard tests
         run: python tools/tests/test_version_guard.py
 
