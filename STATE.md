@@ -1,5 +1,5 @@
 # PAL STATE
-עודכן: 2026-08-13 (v8.14, pal-lint v1.11.1, 100 כללי lint + 25 postflight, 7 שערי CI, שישה מקורות מדידה)
+עודכן: 2026-08-16 (v8.14, pal-lint v1.12.0, 7 שערי CI, שישה מקורות מדידה)
 
 > כללי ברזל (NAP, קישורים אסורים, טרמינולוגיה, פרוטוקול SKILL, Yoast) חיים בזיכרון המובנה. לא משוכפלים כאן.
 
@@ -14,13 +14,14 @@
 | product-page-machine | v7.0 | מותקן, **לא עודכן לארכיטקטורת v8** | אותו פער |
 | ai-visibility-audit | v1.1 | פעיל | baseline 2026-07-08. לא נמדד מחדש |
 | off-site-radar | v1.0 | פעיל | baseline 2026-07-08 |
-| pal-lint (tools/) | **v1.11.1** | selftest ירוק | 108 כללים (עם postflight) |
+| pal-lint (tools/) | **v1.12.0** | selftest ירוק | 108 כללים (עם postflight) |
 | preflight.py (tools/) | v1.7 | brief רזה 42KB + מלא 123KB | allowed_topics, refresh_queue, dominant_pages, partner_dominated, pricing, ai_agent, intent |
 | postflight.py (tools/) | **v1.5** | שער יציאה | EVASIVE_ANSWER, NO_CONVERSION_PATH, AI_CHANNEL, DOMINANT_LINK, **DOMINANT_H1_DUPLICATE**, REFRESH_* |
 | ledger_lint (v1.1, STALE_NOT_YET), version_guard (**v1.2**), ledger_merge, ledger_patch | v1.0-1.2 | ב-CI | **7 שערים** על כל push: ledger_lint, selftest, test_flight, test_postflight, test_ledger_tools, test_version_guard, version_guard |
 | ai_visibility_pull, ga_pull, bing_ai_presence, gbp_analyze, youtube_pull | — | ב-pal-gsc-data | שישה מקורות מדידה, קרון אוטומטי |
 
 ### לקחי גרסה אחרונים (תקציר — הפירוט בזיכרון ובראש כל SKILL)
+- **2026-08-16 (D2 שלב א, שכבת הקישורים של מרום):** `MAROM_PC_LINK` **נמחק**. הכלל חסם `/product-category/` במרום בטענה שהוא "כמעט תמיד 301/404", והנתונים מראים **420 עמודים, 308,604 חשיפות, 12,847 קליקים, 73 במיקום 1-3**. `preflight` המליץ על אותם עמודים ש-`postflight` חסם, חזרה מדויקת של כשל v8.12. במקומו: **רשימות סגורות** (הכרעת גיל, לא תבנית) — 16 עמודי שותף אסורים ללא שינוי, ו-17 עמודי מותג מאושרים ב-`allowed_brand_links`, כולל `/kitchenaid-parts/` ו-`/magimix-parts/` שהם שלנו. כלל חדש `BRAND_LINK_UNKNOWN` תופס כתיב שגוי בכתובת מותג. **עמוד מתורגם = עמוד המקור** (`base_brand_path` מנרמל en/ru/ar/fr). **לקח: כלל גס ששרד אחרי שהפתרון הנכון נכנס.** `link_audit` כבר כיסה את הסיכון האמיתי מאותו יום.
 - **2026-08-13 (ערב, סגירת כפילות D1):** `SKILL.md` החזיק 21 רשומות היסטוריה שקיימות גם ב-`CHANGELOG.md`, **וארבע מהן כבר התפצלו לשני טקסטים תחת אותו מספר גרסה** (v7.20 ב-19% דמיון בלבד). `version_guard` התיר את זה במפורש, כלומר השער שנבנה למנוע שתי גרסאות מקבילות אישר בדיוק אותו דפוס. 20 רשומות נמחקו מ-`SKILL.md` אחרי הצלבה שהוכיחה שכל תוכן תפעולי כבר קיים בגוף הקובץ או בקוד (69.7KB → 54.8KB). `version_guard` v1.2 חוסם מעכשיו ב-`CHANGELOG_DUPLICATE` ו-`CHANGELOG_DRIFT`, ושער CI שביעי `test_version_guard` (14 בדיקות) מוודא שהכלי עצמו עובד. **לקח: כלל אכיפה בלי בדיקה משלו הוא הבטחה ולא שער.** הפירוט ב-`tools/CHANGELOG-tools.md`.
 - **2026-08-13 (תיקון עובדתי):** `brief_partial` הוא **42KB** ו-`brief_full` 123KB, נמדד בהרצת `preflight --phase plan --site marom`. הרשומה ב-`CHANGELOG.md` נשאה 17KB, מספר שגוי.
 - **תיעוד שינויים בכלים חי ב-`tools/CHANGELOG-tools.md`** (מ-2026-08-13). שינוי ב-tools/ אינו מזיז את גרסת content-machine ואינו נוגע ב-SKILL.md.
