@@ -11,6 +11,33 @@ ledger_lint, ledger_patch, ledger_merge, version_guard והבדיקות שלהם
 
 ---
 
+> **2026-08-16 — D2 שלב ב: סמכות ארגונית לפלרום**
+
+**`pal_lint.py` v1.12.0 → v1.13.0**
+
+שלוש השכבות סתרו: `SITES` הגדיר `expert="דניאל"` ואכף אותו, `project-plrom.md`
+החזיק "עוגן סמכות: מומחה שירות פלרום" בלי שם, והזיכרון סימן "טרם אומת".
+בפועל כל מאמר פלרום ייצר ישות `Person` בלי `jobTitle` ובלי `sameAs`.
+**ישות אדם שאי אפשר לאמת אי אפשר לצטט**, וציטוט הוא המדד שאנחנו מנסים להזיז.
+
+**הכרעת גיל: עוגן ארגוני, לא אדם.** `plrom.expert = None`, `"דניאל"` עבר
+ל-`wrong_experts`, ושדה חדש `author_org_only` (plrom=True). שני כללים חדשים:
+`PERSON_ENTITY_FORBIDDEN` (ERROR) על ישות `Person` ב-@graph, ו-`AUTHOR_NOT_ORG`
+(ERROR) על `author` שמצביע על `#content-author`. הודעת `EXPERT` מטפלת
+ב-`expert=None`.
+
+**`plrom_person_bad.html` — fixture חדש** עם ישות Person, author שגוי ושם
+פרטי ב-author-bio. selftest מצפה לשלושת הכללים.
+
+**קבצי סקיל:** `project-plrom.md` סעיף "מומחה" הוחלף ב"סמכות (E-E-A-T
+ארגוני)" עם הוראת ההיפוך; `html-template.md` v7.13 מסמן את החריג בשלד
+ה-@graph; `SKILL.md` v8.15.
+
+**הפיך בדגל אחד.** שם מלא + תפקיד + `sameAs` חיצוני אחד מחזירים את פלרום
+ל-6 ישויות. אין למלא חלקית.
+
+---
+
 > **2026-08-16 — D2 שלב א: שכבת הקישורים של מרום**
 
 **`pal_lint.py` v1.11.1 → v1.12.0**
