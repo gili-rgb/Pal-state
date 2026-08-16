@@ -1,5 +1,5 @@
 # PAL STATE
-עודכן: 2026-08-13 (v8.14, pal-lint v1.11.1, 110 כללים, 6 שערי CI, שישה מקורות מדידה)
+עודכן: 2026-08-13 (v8.14, pal-lint v1.11.1, 100 כללי lint + 25 postflight, 7 שערי CI, שישה מקורות מדידה)
 
 > כללי ברזל (NAP, קישורים אסורים, טרמינולוגיה, פרוטוקול SKILL, Yoast) חיים בזיכרון המובנה. לא משוכפלים כאן.
 
@@ -15,12 +15,14 @@
 | ai-visibility-audit | v1.1 | פעיל | baseline 2026-07-08. לא נמדד מחדש |
 | off-site-radar | v1.0 | פעיל | baseline 2026-07-08 |
 | pal-lint (tools/) | **v1.11.1** | selftest ירוק | 108 כללים (עם postflight) |
-| preflight.py (tools/) | v1.7 | brief רזה 41KB + מלא | allowed_topics, refresh_queue, dominant_pages, partner_dominated, pricing, ai_agent, intent |
+| preflight.py (tools/) | v1.7 | brief רזה 42KB + מלא 123KB | allowed_topics, refresh_queue, dominant_pages, partner_dominated, pricing, ai_agent, intent |
 | postflight.py (tools/) | **v1.5** | שער יציאה | EVASIVE_ANSWER, NO_CONVERSION_PATH, AI_CHANNEL, DOMINANT_LINK, **DOMINANT_H1_DUPLICATE**, REFRESH_* |
-| ledger_lint (v1.1, STALE_NOT_YET), version_guard, ledger_merge, ledger_patch | v1.0-1.1 | ב-CI | **6 שערים** על כל push: ledger_lint, selftest, test_flight, test_postflight, test_ledger_tools, version_guard |
+| ledger_lint (v1.1, STALE_NOT_YET), version_guard (**v1.2**), ledger_merge, ledger_patch | v1.0-1.2 | ב-CI | **7 שערים** על כל push: ledger_lint, selftest, test_flight, test_postflight, test_ledger_tools, test_version_guard, version_guard |
 | ai_visibility_pull, ga_pull, bing_ai_presence, gbp_analyze, youtube_pull | — | ב-pal-gsc-data | שישה מקורות מדידה, קרון אוטומטי |
 
 ### לקחי גרסה אחרונים (תקציר — הפירוט בזיכרון ובראש כל SKILL)
+- **2026-08-13 (ערב, סגירת כפילות D1):** `SKILL.md` החזיק 21 רשומות היסטוריה שקיימות גם ב-`CHANGELOG.md`, **וארבע מהן כבר התפצלו לשני טקסטים תחת אותו מספר גרסה** (v7.20 ב-19% דמיון בלבד). `version_guard` התיר את זה במפורש, כלומר השער שנבנה למנוע שתי גרסאות מקבילות אישר בדיוק אותו דפוס. 20 רשומות נמחקו מ-`SKILL.md` אחרי הצלבה שהוכיחה שכל תוכן תפעולי כבר קיים בגוף הקובץ או בקוד (69.7KB → 54.8KB). `version_guard` v1.2 חוסם מעכשיו ב-`CHANGELOG_DUPLICATE` ו-`CHANGELOG_DRIFT`, ושער CI שביעי `test_version_guard` (14 בדיקות) מוודא שהכלי עצמו עובד. **לקח: כלל אכיפה בלי בדיקה משלו הוא הבטחה ולא שער.** הפירוט ב-`tools/CHANGELOG-tools.md`.
+- **2026-08-13 (תיקון עובדתי):** `brief_partial` הוא **42KB** ו-`brief_full` 123KB, נמדד בהרצת `preflight --phase plan --site marom`. הרשומה ב-`CHANGELOG.md` נשאה 17KB, מספר שגוי.
 - **תיעוד שינויים בכלים חי ב-`tools/CHANGELOG-tools.md`** (מ-2026-08-13). שינוי ב-tools/ אינו מזיז את גרסת content-machine ואינו נוגע ב-SKILL.md.
 - **2026-08-13 (שני שערים חדשים):** `DOMINANT_H1_DUPLICATE` ב-postflight v1.5 חוסם H1 שמשכפל שאילתה שעמוד שלנו מחזיק במיקום 1-3 (הרקע: שני מאמרי שארפ במרום על אשכול במיקום 1.0 עם 19,687 חשיפות, שניהם על אפס). `STALE_NOT_YET` ב-ledger_lint מתריע על שורת "טרם צבר" מעל 90 יום. שער CI שישי: `test_ledger_tools`.
 - **2026-08-10 (ריצה מוצלחת ראשונה):** מאמר Refresh למרום (`/חלקי-חילוף-למקרר-שארפ/`) עבר את השרשרת המלאה: preflight → finalize → postflight ירוק. שכבת הדדופ תפסה כפילות 100% והפכה מאמר חדש ל-Refresh. נוספו למאמר: דנה (AI channel), `sameAs` לשארפ, וטבלת מחירים במקום "פנו אלינו". **שתי לחיצות "המשך" בלבד** אחרי צמצום ה-brief.
