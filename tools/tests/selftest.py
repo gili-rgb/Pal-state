@@ -80,6 +80,10 @@ expect("blog_product_schema", FIX / "blog_product_schema.html", "csb",
 expect("schema_id_collision_bad", FIX / "schema_id_collision_bad.html", "csb",
        must_have_errors=["SCHEMA_ID_YOAST_COLLISION"])  # v1.4.0; #article/#breadcrumb מתנגשים עם @graph של Yoast
 
+# v1.13.0 — פלרום בלי ישות Person (הכרעת גיל 2026-08-16)
+expect("plrom_person_bad", FIX / "plrom_person_bad.html", "plrom", doc_type="blog",
+       must_have_errors=["PERSON_ENTITY_FORBIDDEN", "AUTHOR_NOT_ORG", "EXPERT"])
+
 expect("brandhub_good", FIX / "brandhub_good.html", "marom", must_pass=True,
        expect_type="brandhub")  # כולל /brands/haier-service/ — לא קישור אסור
 
