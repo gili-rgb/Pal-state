@@ -1,5 +1,5 @@
 # PAL STATE
-עודכן: 2026-08-16 (v8.17, pal-lint v1.13.0, version_guard v1.3, 7 שערי CI, שישה מקורות מדידה)
+עודכן: 2026-08-16 (v8.17, pal-lint v1.14.0, version_guard v1.3, 8 שערי CI, שישה מקורות מדידה)
 
 > כללי ברזל (NAP, קישורים אסורים, טרמינולוגיה, פרוטוקול SKILL, Yoast) חיים בזיכרון המובנה. לא משוכפלים כאן.
 
@@ -14,13 +14,15 @@
 | product-page-machine | v7.0 | מותקן, **לא עודכן לארכיטקטורת v8** | אותו פער |
 | ai-visibility-audit | v1.1 | פעיל | baseline 2026-07-08. לא נמדד מחדש |
 | off-site-radar | v1.0 | פעיל | baseline 2026-07-08 |
-| pal-lint (tools/) | **v1.13.0** | selftest ירוק | 108 כללים (עם postflight) |
+| pal-lint (tools/) | **v1.14.0** | selftest ירוק | 108 כללים (עם postflight) |
 | preflight.py (tools/) | v1.7 | brief רזה 42KB + מלא 123KB | allowed_topics, refresh_queue, dominant_pages, partner_dominated, pricing, ai_agent, intent |
 | postflight.py (tools/) | **v1.5** | שער יציאה | EVASIVE_ANSWER, NO_CONVERSION_PATH, AI_CHANNEL, DOMINANT_LINK, **DOMINANT_H1_DUPLICATE**, REFRESH_* |
-| ledger_lint (v1.1, STALE_NOT_YET), version_guard (**v1.2**), ledger_merge, ledger_patch | v1.0-1.2 | ב-CI | **7 שערים** על כל push: ledger_lint, selftest, test_flight, test_postflight, test_ledger_tools, test_version_guard, version_guard |
+| ledger_lint (v1.1, STALE_NOT_YET), version_guard (**v1.2**), ledger_merge, ledger_patch | v1.0-1.2 | ב-CI | **8 שערים** על כל push: ledger_lint, selftest, test_flight, test_postflight, test_ledger_tools, **test_can_publish**, test_version_guard, version_guard |
 | ai_visibility_pull, ga_pull, bing_ai_presence, gbp_analyze, youtube_pull | — | ב-pal-gsc-data | שישה מקורות מדידה, קרון אוטומטי |
 
 ### לקחי גרסה אחרונים (תקציר — הפירוט בזיכרון ובראש כל SKILL)
+- **2026-08-16 (חסימה שקטה בת עשרה ימים + השער שהיה חסר):** `BRAND_HUB_MISSING` נוסף ב-v1.9.0 כ-ERROR גורף. **לפלרום אפס עמודי `/brands/`, ולכן כל מאמר פלרום היה בלתי אפשרי לפרסום מ-6 באוגוסט.** ה-CI היה ירוק כל הזמן. **הכרעת גיל: אין צורך בעמוד מותג כדי לכתוב מאמר בפלרום** — שדה `brand_hub_required` (plrom=False). בנוסף: מותג מוחרג יוצא מתור ה-Refresh (עמוד אלקטרה ישב במקום 2 בפלרום עם 23,698 חשיפות ומיקום 1.6, בזמן ש-`BRAND_ELECTRA` חוסם אותו).
+- **שער CI שמיני `test_can_publish` — הבדיקה שהייתה חסרה.** כל שער נבדק מול fixture משלו ("האם הכלל תופס"), ואף בדיקה לא שאלה את ההפך ("האם עדיין אפשר לכתוב מאמר"). מאמר מינימלי-תקין לכל אתר חייב לעבור `exit 0`. **אומת שהוא נכשל על המצב הקודם.** **לקח: מערכת הגנות שגדלה מהר צריכה בדיקה שמודדת את היכולת לעבוד, לא רק את איכות ההגנה.**
 - **2026-08-16 (D2 שלב ד, מותגי מרום):** סעיף "מותגים" מנה 8 בזמן שיש תנועה על מעל 20. **הכרעת גיל: עמוד מותג אינו תנאי לכתיבה** — מותג עם תוכן טוב וחשיפות מותר גם בלי `/brands/` (סמוראי, 13,416 חשיפות). הרשימה נבנתה ממיפוי GSC ומחולקת לשלוש שכבות, וההחרגות נכתבו לצידה. **חשיפות לבדן אינן מתירות כתיבה:** בקו אסורה לחלוטין למרות 12,131 חשיפות. הופרדה שכבת אלקטרוניקה שאינה שירות: הייסנס, TCL, בוס ו-JBL הם חלפים בלבד (שלטים ורמקולים) ומרום אינה נותנת להם שירות. **TCL כן מותג שירות של פלרום.**
 - **2026-08-16 (D2 שלב ג, סגירת placeholders):** שני שדות ממוענים לגיל ישבו שישה שבועות ב-`project-marom.md`, קובץ שנקרא `verbatim`. הכרעת גיל: אלה כל הנתונים על מיכה איתן. `sameAs` מושמט מישות ה-`Person`, ואין להוסיף שנות ניסיון. **מרום שומרת `Person` ופלרום לא, כי ההבדל הוא שם ותפקיד מאומתים ולא ה-`sameAs` שחסר בשתיהן.** `version_guard` v1.3: `OPEN_PLACEHOLDER` (ERROR) על `[גיל:` בקובצי סקיל. **לקח: placeholder בקובץ מקור אמת הוא חוב שקט שאף דוח לא מציג.**
 - **2026-08-16 (D2 שלב ב, סמכות ארגונית לפלרום):** `SITES` הגדיר `expert="דניאל"`, אבל `project-plrom.md` מעולם לא החזיק תפקיד או `sameAs`. התוצאה: ישות `Person` בכל מאמר פלרום בלי הוכחה חיצונית. **הכרעת גיל: עוגן סמכות ארגוני.** פלרום מייצרת מעכשיו **5 ישויות** (בלי Person, `author`→`#content-organization`), `"דניאל"` עבר ל-`wrong_experts`, ושני כללים חדשים `PERSON_ENTITY_FORBIDDEN` ו-`AUTHOR_NOT_ORG`. **הפיך** ברגע שיתקבלו שם, תפקיד ו-sameAs אמיתיים. **לקח: אדם שאי אפשר לאמת אי אפשר לצטט, וארגון אמיתי חזק מאדם ריק.**
