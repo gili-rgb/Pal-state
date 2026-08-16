@@ -37,15 +37,35 @@
 
 **אסור לכתוב תוכן למרום על: בקו (Beko) — הוצא לצמיתות.**
 
-## קישורים אסורים
+## קישורים: רשימות סגורות (הכרעת גיל, 2026-08-16)
 
-**לעולם לא לקשר ל:**
-- `/[brand]-parts/` (לכל מותג)
-- `/[brand]-service/` (לכל מותג)
-- עמודי product-category — מותר (בניגוד לפלרום)
+> מקור האמת המכני הוא `SITES["marom"]` ב-`tools/pal_lint.py`. הרשימות כאן
+> נועדו לקריאה בזמן כתיבה, ואסור לערוך אותן בנפרד מהלינט.
+> **רשימה סגורה ולא תבנית:** אין כוונה להוסיף עמודי שותפים חדשים.
 
-**מותגים שאסור ליצור להם URL עם parts/service:**
-sharp, dedietrich, bauknecht, haier, blomberg, delonghi, amana, zanussi
+**אסור לקשר (16 עמודי שותף):**
+`/sharp-service/` `/sharp-parts/` `/blomberg-service/` `/blomberg-parts/`
+`/haier-service/` `/haier-parts/` `/delonghi-service/` `/delonghi-parts/`
+`/dedietrich-service/` `/dedietrich-parts/` `/bauknecht-service/` `/bauknecht-parts/`
+`/amana-service/` `/amana-parts/` `/zanussi-service/` `/zanussi-parts/`
+
+**מותר לקשר, עמודי מותג (17):**
+`/brands/` + `sharp-service` `blomberg-service` `haier-service` `delonghi-service`
+`zanussi-service` `amana-service` `bauknecht-service` `moulinex-service`
+`philips-service` `magimix-service` `kitchenaid-service` `tefal-service`
+`grundig-service` `lavamat-service` `indesit-service`
+ובנוסף `/kitchenaid-parts/` ו-`/magimix-parts/`, שהם שלנו ולא של השותף.
+
+שים לב להבחנה: `/bauknecht-service/` אסור, `/brands/bauknecht-service/` מותר.
+כתיב שגוי בכתובת מותג נחסם ב-`BRAND_LINK_UNKNOWN`.
+
+**עמודי `/product-category/` מותרים לקישור.** 420 עמודים, 308,604 חשיפות,
+12,847 קליקים, 73 מהם במיקום 1-3. הכלל `MAROM_PC_LINK` שחסם אותם נמחק
+ב-pal-lint v1.12.0 אחרי שהתברר שהנימוק שלו ("כמעט תמיד 301/404") שגוי.
+כמו כל קישור פנימי, גם הם מחייבים אימות `check_url` חי לפני הגשה.
+
+**שפות:** עמוד מתורגם הוא אותו עמוד. `/en/brands/amana-service/` זהה
+ל-`/brands/amana-service/` בכל הבדיקות.
 
 ## CTA
 
