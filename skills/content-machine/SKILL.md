@@ -8,14 +8,15 @@ description: >
   תיקון, מדריך תחזוקה, סקירת אביזרים, תוכן SEO, או כל תוכן שיווקי עבור אתרי
   שירות מוצרי חשמל. גם אם המשתמש אומר רק "תכתוב לי בלוג" או "צריך מאמר חדש" —
   הפעל Skill זה. מפיק קוד HTML סמנטי נקי עם JSON-LD Schema (@graph: Article +
-  FAQPage + LocalBusiness + BreadcrumbList + Person + Organization), מוכן
+  FAQPage + LocalBusiness + BreadcrumbList + Person + Organization; בפלרום בלי
+  Person), מוכן
   להטמעה ישירה בווידג'ט HTML של Elementor. תומך בשלושה פרויקטים: סי.אס.בי
   (csb.co.il), מרום (marom-serv.co.il), פלרום (plrom.co.il).
 ---
 
-# מכונת תוכן v8.14 — SEO + GEO/AEO & HTML לאלמנטור
+# מכונת תוכן v8.15 — SEO + GEO/AEO & HTML לאלמנטור
 
-> **v8.14 (לקחי הריצה המוצלחת הראשונה, 2026-08-10):** מאמר Refresh למרום עבר את השרשרת המלאה — שכבת הדדופ תפסה כפילות והפכה אותו ל-Refresh, ונוספו דנה, `sameAs` וטבלת מחירים שלא היו במקור. שלושה ליקויים שהריצה חשפה: (1) **`EVASIVE_ANSWER` לא זיהה גרשיים עברי** — `ש״ח` (U+05F4) נכשל למרות מספר אמיתי. (2) **`TEL_FORMAT` (WARN)** — `tel:` עם מקפים אינו אמין בכל המכשירים. (3) **`html-template` v7.12:** הכוכב ל-`#A05F00` (5.08:1 במקום 2.69:1), ו-`.cta-secondary` עם רקע מפורש במקום `transparent`. **המאמר החי כבר השתמש בשני התיקונים — התיעוד פיגר אחרי המציאות.**
+> **v8.15 (סמכות ארגונית לפלרום, 2026-08-16):** לפלרום לא היה מומחה נקוב מאומת. `SITES` הגדיר `expert="דניאל"`, אבל `project-plrom.md` מעולם לא החזיק תפקיד או `sameAs`, ולכן כל מאמר פלרום ייצר ישות `Person` בלי הוכחה חיצונית. **ישות אדם שאי אפשר לאמת אי אפשר לצטט, וזה בדיוק המדד שאנחנו מנסים להזיז.** הכרעת גיל: עוגן סמכות ארגוני. (1) ישות `Person` מושמטת בפלרום ו-`author` מצביע על `#content-organization`, כלומר 5 ישויות ולא 6. (2) `PERSON_ENTITY_FORBIDDEN` ו-`AUTHOR_NOT_ORG` (ERROR) ב-pal-lint v1.13.0. (3) `"דניאל"` עבר ל-`wrong_experts`, וכל שם פרטי בתוכן פלרום נחסם. (4) `html-template` v7.13. **הפיך:** שם, תפקיד ו-`sameAs` אמיתיים מחזירים את פלרום ל-6 ישויות. אין למלא חלקית.
 
 > היסטוריה מלאה: `CHANGELOG.md`. כללים משותפים: `common-core.md`.
 
@@ -402,7 +403,7 @@ pal-lint v1.5.0 אוכף כאזהרות: `TRANSITION_STACK` (2+ מילות קי�
 
 1. **Article:** headline, description, datePublished, dateModified, author (@id), publisher (@id), mainEntityOfPage, **speakable** (SpeakableSpecification, cssSelector `.direct-answer` — בלוק ה"בקצרה" ה-extractable שעוזרי קול ומנועי AI מצביעים אליו), about (4 entities), mentions (Brand בלבד — אין Product בבלוג, v7.15)
 2. **אין ישות Product בבלוג (v7.15).** גוגל דורש בכל Product לפחות אחד מ-offers/review/aggregateRating, ומחיר סטטי בבלוג יוצר mismatch — לכן דף המוצר הוא היחיד שמחזיק Product schema עם offer חי. הכרטיס הוויזואלי (`.product-card`) נשאר תוכן בלבד; ב-`mentions` של Article מפנים ל-Brand בלבד. pal-lint אוכף (SCHEMA_PRODUCT_BLOG).
-3. **Person (E-E-A-T מבוסס הוכחה):** @id, name, jobTitle, worksFor (@id), knowsAbout (התמחות מסעיף "מומחה" בקובץ הפרויקט), description = עוגן סמכות מאומת + הוכחת ניסיון, לא תיאור גנרי. מקור יחיד: סעיף "מומחה" בקובץ הפרויקט
+3. **Person (E-E-A-T מבוסס הוכחה) — לא קיים בפלרום (v8.15):** לאתר בלי מומחה נקוב מאומת אין ישות `Person`, ו-`author` מצביע על `#content-organization`. נאכף ב-`PERSON_ENTITY_FORBIDDEN` ו-`AUTHOR_NOT_ORG`. בשאר האתרים: @id, name, jobTitle, worksFor (@id), knowsAbout (התמחות מסעיף "מומחה" בקובץ הפרויקט), description = עוגן סמכות מאומת + הוכחת ניסיון, לא תיאור גנרי. מקור יחיד: סעיף "מומחה" בקובץ הפרויקט
 4. **Organization:** @id, name, alternateName, url, logo, telephone, description (מהנרטיב הקנוני בקובץ הפרויקט), sameAs (YouTube, אודות)
 5. **FAQPage:** שאלות PPA — **זהות לטקסט במאמר**
 6. **LocalBusiness:** @id, name, telephone, url, address, areaServed (Place + Cities), priceRange, parentOrganization (@id)
