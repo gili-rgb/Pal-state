@@ -566,7 +566,7 @@ def match_video(query, videos):
             "coverage": round(cover, 2)}
 
 
-def enrich_refresh(items, pages, ledger):
+def enrich_refresh(items, pages, ledger, site=None):
     """
     v1.5: תור Refresh ברמת **עמוד**, לא ברמת שאילתה.
     הגרסה הראשונה החזירה שורה לכל שאילתה, ולכן אותו עמוד הופיע שש פעמים.
@@ -590,6 +590,15 @@ def enrich_refresh(items, pages, ledger):
                               "impressions": it.get("impressions", 0)})
     out = []
     for url, g in grouped.items():
+        # הכרעת גיל 2026-08-16: מותג מוחרג אינו נכנס לתור ה-Refresh.
+        # הרקע: /שירות-לקוחות-אלקטרה-.../ ישב במקום 2 בתור של פלרום עם
+        # 23,698 חשיפות ומיקום 1.6, בזמן ש-BRAND_ELECTRA חוסם כל תוכן
+        # אלקטרה שם. is_excluded_brand הופעל על allowed_topics ועל
+        # autocomplete, ולא כאן. preflight המליץ על מה ש-postflight חוסם,
+        # בפעם השלישית (v8.12, MAROM_PC_LINK, וזה).
+        if site and (is_excluded_brand(urllib.parse.unquote(url), site)
+                     or is_excluded_brand(by_url.get(url, {}).get("h1", ""), site)):
+            continue
         rows = pages.get(url, [])
         ranked = sorted(rows, key=lambda q: -q["impressions"])
         led = by_url.get(url, {})
@@ -671,7 +680,7 @@ def phase_plan(site):
     seen = {o["query"].lower() for o in allowed}
     allowed += [g for g in gems if g["query"].lower() not in seen]
     refresh = enrich_refresh(
-        [o for o in opps if o["verdict"] == "REFRESH"], pages, ledger)
+        [o for o in opps if o["verdict"] == "REFRESH"], pages, ledger, site)
     hub_gaps = [o for o in opps if o["kind"] == "brandhub"][:10]
 
     if not allowed and not refresh:
