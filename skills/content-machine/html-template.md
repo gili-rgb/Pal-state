@@ -1,4 +1,6 @@
-# תבנית HTML v7.12 — מוכנה להטמעה בווידג'ט HTML של Elementor
+# תבנית HTML v7.13 — מוכנה להטמעה בווידג'ט HTML של Elementor
+
+> **v7.13 (2026-08-16):** חריג פלרום — ישות `Person` מושמטת ו-`author` מצביע על `#content-organization`. פלרום 5 ישויות, CSB ומרום 6. הרקע: פלרום מעולם לא החזיקה שם מומחה עם תפקיד ו-`sameAs`, ולכן ייצרה ישות אדם ריקה בכל מאמר.
 
 > **v7.9 (2026-08-03):** **ישות `Product` הוסרה מה-@graph.** התבנית עדיין הציגה "6 entities, או 7 עם כרטיס מוצר" וכללה בלוק Product מלא — סתירה מול SKILL v7.15+ שקובע 6 ישויות תמיד, ומול pal-lint שאוכף `SCHEMA_PRODUCT_BLOG` כ-ERROR. דריפט בן שלוש גרסאות שנתפס באודיט v7.18. `mentions` מצביע על Brand בלבד.
 
@@ -403,7 +405,14 @@
 1. **`.bh-pref-mini .star` = `#A05F00`** ולא ערך ה-warning הרגיל. `#E08A00` על לבן הוא 2.69:1 ונכשל ב-WCAG; `#A05F00` הוא 5.08:1.
 2. **`.cta-secondary` מקבל רקע מפורש זהה להורה** (`#140C3C`) ולא `transparent`. הבודק אינו פותר ירושה לסלקטור שטוח, ורקע מפורש גם נכון סמנטית וגם עובר.
 
-## Schema @graph — שלד (6 entities תמיד)
+## Schema @graph — שלד (6 entities תמיד; פלרום 5, ראה חריג למטה)
+
+> **חריג פלרום (v7.13, 2026-08-16):** לפלרום אין מומחה נקוב מאומת, ולכן
+> **ישות `Person` מושמטת לגמרי** ו-`"author"` מצביע על
+> `#content-organization`. פלרום מייצרת 5 ישויות. CSB ומרום ללא שינוי.
+> נאכף ב-pal-lint v1.13.0 (`PERSON_ENTITY_FORBIDDEN`, `AUTHOR_NOT_ORG`).
+> ב-`author-bio` של פלרום: אווטאר `פ`, ה-`<strong>` הוא שם החברה, והפסקה
+> היא עוגן הסמכות מקובץ הפרויקט. בלי שם אדם.
 
 > **אין ישות `Product` בבלוג. לעולם.** גם כשיש כרטיס מוצר. גוגל דורש בכל Product לפחות אחד מ-`offers`/`review`/`aggregateRating`, ומחיר סטטי בבלוג יוצר mismatch — לכן דף המוצר הוא היחיד שמחזיק Product עם offer חי. הכרטיס הוויזואלי (`.product-card`) הוא **תוכן בלבד**, והמחיר בתוכו אינו schema. `mentions` מצביע על Brand בלבד. pal-lint אוכף (`SCHEMA_PRODUCT_BLOG`, ERROR).
 >
@@ -421,6 +430,7 @@
       "datePublished": "[YYYY-MM-DD]",
       "dateModified": "[YYYY-MM-DD]",
       "author": { "@id": "https://[domain]/#content-author" },
+      "//author-plrom": "בפלרום: #content-organization במקום #content-author",
       "publisher": { "@id": "https://[domain]/#content-organization" },
       "mainEntityOfPage": "https://[domain]/[slug]/",
       "speakable": {
@@ -440,6 +450,7 @@
       ]
     },
     {
+      "//": "פלרום: השמט את כל בלוק ה-Person הזה, ושנה author למעלה ל-#content-organization",
       "@type": "Person",
       "@id": "https://[domain]/#content-author",
       "name": "[שם המומחה מקובץ הפרויקט]",
