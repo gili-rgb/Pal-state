@@ -11,7 +11,9 @@ v7.22, ומי שהועלה אחרון דרס את השני בשקט. אין נע
 מהריפו ולא להפך, וכל bump נבדק מכנית לפני שהוא מגיע לאוויר.
 
 הבדיקות:
-  VERSION_DUPLICATE   מספר גרסה שכבר קיים ב-CHANGELOG
+  VERSION_DUPLICATE   מספר גרסה מופיע פעמיים באותו קובץ
+  CHANGELOG_DUPLICATE רשומת היסטוריה קיימת גם ב-SKILL.md וגם ב-CHANGELOG.md
+  CHANGELOG_DRIFT     רשומת הגרסה הנוכחית קיימת בשניהם עם טקסט שונה
   VERSION_REGRESSION  הגרסה בכותרת אינה גדולה מהאחרונה בהיסטוריה
   VERSION_UNLOGGED    גרסה בכותרת בלי רשומת CHANGELOG
   LINT_VERSION_AHEAD  הסקיל מפנה לגרסת pal-lint שאינה קיימת בריפו
@@ -51,15 +53,40 @@ def check_versions(skill_dir):
     cur = m.group(1)
     NOTES.append(f"גרסת SKILL: v{cur}")
 
-    hist = re.findall(r">\s*\*\*v(\d+\.\d+(?:\.\d+)?)\s*\(", s)
-    hist += re.findall(r">\s*\*\*v(\d+\.\d+(?:\.\d+)?)\s*\(",
-                       ch.read_text(encoding="utf-8") if ch.exists() else "")
+    entry_re = re.compile(r"^>\s*\*\*v(\d+\.\d+(?:\.\d+)?)\s*\(.*$", re.M)
+    s_entries = {m.group(1): m.group(0) for m in entry_re.finditer(s)}
+    c_text = ch.read_text(encoding="utf-8") if ch.exists() else ""
+    c_entries = {m.group(1): m.group(0) for m in entry_re.finditer(c_text)}
+
+    s_all = entry_re.findall(s)
+    c_all = entry_re.findall(c_text)
+    hist = s_all + c_all
     if cur not in hist:
         err("VERSION_UNLOGGED", f"v{cur} בכותרת בלי רשומת changelog")
-    dupes = {v for v in hist if hist.count(v) > 2}
-    if dupes:
-        err("VERSION_DUPLICATE",
-            f"מספר גרסה מופיע ביותר משני מקומות (SKILL+CHANGELOG): {sorted(dupes)}")
+
+    # v1.2 (2026-08-13): הבעלים של ההיסטוריה הוא CHANGELOG.md בלבד.
+    # הגרסה הקודמת התירה במפורש עד שני מקומות, ולכן 21 רשומות חיו בשני
+    # קבצים במקביל ו-4 מהן התפצלו לשני טקסטים שונים תחת אותו מספר גרסה
+    # (v7.18 44.8% דמיון, v7.19 37.1%, v7.20 19.1%, v8.10 40.5%). זה בדיוק
+    # הכשל שהכלי נבנה למנוע. SKILL.md מחזיק מעכשיו את הגרסה הנוכחית בלבד.
+    for label, lst in (("SKILL.md", s_all), ("CHANGELOG.md", c_all)):
+        inner = {v for v in lst if lst.count(v) > 1}
+        if inner:
+            err("VERSION_DUPLICATE",
+                f"מספר גרסה מופיע פעמיים באותו קובץ ({label}): {sorted(inner)}")
+
+    stale = sorted(set(s_entries) & set(c_entries) - {cur}, key=vtuple)
+    if stale:
+        err("CHANGELOG_DUPLICATE",
+            f"רשומות היסטוריה משוכפלות בין SKILL.md ל-CHANGELOG.md: {stale}. "
+            f"הבעלים הוא CHANGELOG.md; SKILL.md מחזיק את הגרסה הנוכחית בלבד")
+
+    if cur in s_entries and cur in c_entries:
+        if s_entries[cur].strip() != c_entries[cur].strip():
+            err("CHANGELOG_DRIFT",
+                f"רשומת v{cur} קיימת בשני הקבצים עם טקסט שונה. "
+                f"אותו מספר גרסה חייב אותו טקסט")
+
     others = [v for v in hist if v != cur]
     if others and vtuple(cur) <= max(vtuple(v) for v in others):
         err("VERSION_REGRESSION",
