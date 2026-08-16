@@ -32,7 +32,15 @@ from pathlib import Path
 #  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
 #  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
 #  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
-VERSION = "1.13.0"
+VERSION = "1.14.0"
+# v1.14.0 (2026-08-16): BRAND_HUB_MISSING מותנה באתר. הכרעת גיל.
+#   הכלל נכנס ב-v1.9.0 (2026-08-06) כ-ERROR גורף, ולפלרום אפס עמודי
+#   /brands/. התוצאה: **כל מאמר פלרום היה בלתי אפשרי לפרסום במשך עשרה
+#   ימים**, ואיש לא ידע כי לא נכתב מאמר פלרום בתקופה הזו. ה-CI היה ירוק
+#   לכל אורך הדרך, כי כל שער נבדק מול fixture משלו ואף בדיקה לא שאלה
+#   "האם עדיין אפשר לסיים ריצה".
+#   שדה חדש brand_hub_required (plrom=False, csb/marom=True).
+#   כשייבנו עמודי מותג לפלרום — להפוך את הדגל.
 # v1.13.0 (2026-08-16): פלרום עובר לעוגן סמכות ארגוני. הכרעת גיל.
 #   הרקע: SITES הגדיר expert="דניאל", אבל project-plrom.md מעולם לא החזיק
 #   שם, תפקיד או sameAs — רק "עוגן סמכות: מומחה שירות פלרום". התוצאה היא
@@ -130,6 +138,7 @@ SITES = {
         "expert": "אילן שמה",
         "wrong_experts": ["סמי", "מיכה", "דניאל"],
         "author_org_only": False,
+        "brand_hub_required": True,
         "phone_ok": ["08-977-7222", "089777222", "08-9777222"],
         "phone_bad": [],
         "nap_street": "הצורפים 3",
@@ -148,6 +157,7 @@ SITES = {
         "expert": "מיכה איתן",
         "wrong_experts": ["דניאל", "סמי", "אילן שמה"],
         "author_org_only": False,
+        "brand_hub_required": True,
         # קנוני: *2620 (הכוכבית לפני הספרות — הכרעת גיל 2026-07-05). 2620* מתקבל בעמודים קיימים.
         "phone_ok": ["*2620", "2620*"],
         "phone_bad": ["03-9799799", "039799799", "03-979-9799"],
@@ -190,6 +200,10 @@ SITES = {
         "expert": None,
         "wrong_experts": ["מיכה", "סמי", "אילן שמה", "דניאל"],
         "author_org_only": True,
+        # הכרעת גיל 2026-08-16: לפלרום אין עמודי /brands/, ואין צורך
+        # בעמוד מותג כדי לכתוב מאמר חדש. BRAND_HUB_MISSING חסם כל מאמר
+        # פלרום מ-6 באוגוסט, תנאי שאי אפשר לקיים.
+        "brand_hub_required": False,
         "phone_ok": ["073-2625600", "0732625600", "073-262-5600"],
         "phone_bad": [],
         "nap_street": "ישראל זמורה 2",
@@ -974,6 +988,8 @@ def check_evasive_answers(html, rep, doc_type):
 def check_brand_hub_link(html, rep, site, doc_type):
     """v1.9.0: כל מאמר בלוג מזין את עמודי המותג שלנו, לא את עמודי השותפים."""
     if doc_type != "blog" or not site:
+        return
+    if not SITES[site].get("brand_hub_required", True):
         return
     dom = SITES[site]["domain"]
     hubs = [u for u in re.findall(r'href="([^"]+)"', html)
