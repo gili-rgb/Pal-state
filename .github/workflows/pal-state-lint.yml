@@ -35,5 +35,8 @@ jobs:
       - name: Ledger tools tests
         run: python tools/tests/test_ledger_tools.py
 
+      - name: Version guard tests
+        run: python tools/tests/test_version_guard.py
+
       - name: Version guard
         run: python tools/version_guard.py
