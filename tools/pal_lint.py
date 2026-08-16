@@ -32,7 +32,23 @@ from pathlib import Path
 #  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
 #  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
 #  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
-VERSION = "1.11.1"
+VERSION = "1.12.0"
+# v1.12.0 (2026-08-16): שכבת הקישורים של מרום יושרה מול המציאות.
+#   (1) MAROM_PC_LINK **נמחק**. הכלל (v1.2.3) טען ש-/product-category/ במרום
+#       הוא "כמעט תמיד 301/404". בדיקה מול מיפוי GSC: 420 עמודים, 308,604
+#       חשיפות, 12,847 קליקים, 209 עם קליקים בפועל, 73 במיקום 1-3.
+#       /product-category/sharp/ לבדו: 1,520 קליקים במיקום 1.0. המוסכמה
+#       שהכלל דרש במקום (/[brand]-אביזרים-וחלפים/) מחזיקה 9 עמודים ו-10,967
+#       חשיפות. הכלל חסם פי 28 ממה שהגן עליו, ו-preflight המליץ על אותם
+#       עמודים ש-postflight חסם — חזרה מדויקת של כשל v8.12. הבעיה שהכלל נועד
+#       לפתור (כתובות מומצאות) מכוסה ב-link_audit שנכנס באותה גרסה עצמה.
+#   (2) BRAND_LINK_UNKNOWN (ERROR, מרום) — קישור ל-/brands/ שאינו ברשימה
+#       הסגורה של 17 עמודי המותג המאושרים. תופס שגיאות כתיב בכתובת מותג,
+#       שהיו עוברות בשקט עד היום. הכרעת גיל: רשימה סגורה ולא תבנית, כי אין
+#       כוונה להוסיף עמודי שותפים חדשים.
+#   (3) base_brand_path — נרמול קידומת שפה. הכרעת גיל: עמוד מתורגם הוא אותו
+#       עמוד. /en/brands/amana-service ו-/ru/brands/moulinex-service קיימים
+#       בפועל ב-GSC ונחשבים זהים לעמוד המקור.
 # v1.11.1 (2026-08-10): EVASIVE_ANSWER לא זיהה גרשיים עברי (U+05F4) —
 #   "ש״ח" נכשל למרות מספר אמיתי בתשובה. נוסף גם TEL_FORMAT: href="tel:"
 #   עם מקפים עלול לא לעבוד בחלק מהמכשירים.
@@ -109,6 +125,7 @@ SITES = {
             "/bosch-service/", "/siemens-service/",
             "/bosch-parts/", "/siemens-parts/",
         ],
+        "allowed_brand_links": None,
         "forbidden_pc": False,  # product-category מותר
     },
     "marom": {
@@ -129,6 +146,23 @@ SITES = {
                       "blomberg", "delonghi", "amana", "zanussi"]
             for k in ["parts", "service"]
         ],
+        "allowed_brand_links": [
+            # הכרעת גיל 2026-08-16: רשימה סגורה, לא תבנית. גיל אינו מוסיף
+            # עמודי שותפים חדשים, ולכן רשימה מפורשת עדיפה על regex.
+            # 17 עמודי מותג. /brands/sharp-service/ הוא החזק ביותר
+            # (5,739 חשיפות, 55 קליקים). lavamat ו-bauknecht אושרו על ידי
+            # גיל אף שאין להם נתוני GSC.
+            "/brands/sharp-service/", "/brands/moulinex-service/",
+            "/brands/blomberg-service/", "/brands/haier-service/",
+            "/brands/delonghi-service/", "/brands/zanussi-service/",
+            "/brands/philips-service/", "/brands/magimix-service/",
+            "/brands/kitchenaid-service/", "/brands/tefal-service/",
+            "/brands/grundig-service/", "/brands/lavamat-service/",
+            "/brands/indesit-service/", "/brands/bauknecht-service/",
+            "/brands/amana-service/",
+            # עמודי חלפים שהם שלנו ולא של השותף, מותרים לקישור במפורש.
+            "/kitchenaid-parts/", "/magimix-parts/",
+        ],
         "forbidden_pc": False,  # product-category מותר
     },
     "plrom": {
@@ -145,6 +179,7 @@ SITES = {
             "/sauter-service/", "/liebherr-service/",
             "/miele-service/", "/miele-parts/",
         ],
+        "allowed_brand_links": None,
         "forbidden_pc": True,  # כל product-category אסור בפלרום
     },
 }
@@ -299,6 +334,24 @@ def check_percent_encoding(html, rep, doc_type):
 
 FORBIDDEN_ANCHORS = {"כאן", "לחץ כאן", "לחצו כאן", "למידע נוסף", "קישור", "קרא עוד", "קראו עוד"}
 
+# הכרעת גיל 2026-08-16: כל עמוד באתרים מתורגם לכמה שפות, ועמוד מתורגם הוא
+# אותו עמוד. /en/brands/amana-service/ ו-/ru/brands/moulinex-service/ קיימים
+# בפועל ב-GSC. לכן כל בדיקה שנוגעת בנתיב מנרמלת קודם את קידומת השפה.
+LANG_PREFIX = re.compile(r"^/(?:en|ru|ar|fr)(?=/)", re.I)
+
+
+def base_brand_path(url, cfg):
+    """נתיב /brands/... מנורמל: בלי דומיין, בלי קידומת שפה, בלי סלאש סוגר."""
+    p = re.sub(r"^https?://", "", url.strip(), flags=re.I)
+    if p.lower().startswith(cfg["domain"]):
+        p = p[len(cfg["domain"]):]
+    p = p.split("?")[0].split("#")[0]
+    if not p.startswith("/"):
+        p = "/" + p
+    p = LANG_PREFIX.sub("", p)
+    return "/" + p.strip("/").lower() + "/"
+
+
 def check_links(html, rep, site, doc_type):
     cfg = SITES[site]
     # --- משמעת anchor (v1.3.0) ---
@@ -332,10 +385,18 @@ def check_links(html, rep, site, doc_type):
                 rep.err("FORBIDDEN_LINK", f"קישור אסור באתר {site}: {u[:90]}")
         if cfg["forbidden_pc"] and "/product-category/" in low and cfg["domain"] in low:
             rep.err("FORBIDDEN_PC", f"product-category אסור בפלרום: {u[:90]}")
-        # מרום: קטגוריות מותג הן slug עברי (/[brand]-אביזרים-וחלפים/ או /sharp/),
-        # לא /product-category/. קישור product-category = כמעט תמיד 301/404. חובה לאמת.
-        if site == "marom" and "/product-category/" in low:
-            rep.err("MAROM_PC_LINK", f"קישור /product-category/ במרום — המוסכמה slug עברי (/[brand]-אביזרים-וחלפים/). אמת ב-check_url ותקן: {u[:90]}")
+        # v1.12.0: MAROM_PC_LINK נמחק. הכלל טען ש-product-category במרום הוא
+        # "כמעט תמיד 301/404", וזה שגוי: 420 עמודים, 308,604 חשיפות, 12,847
+        # קליקים, 73 מהם במיקום 1-3 (/product-category/sharp/ לבדו 1,520
+        # קליקים במיקום 1.0). הכלל חסם 308K כדי להגן על מוסכמה שמחזיקה 11K,
+        # ו-preflight המליץ בדיוק על העמודים שהוא חסם — חזרה של כשל v8.12.
+        # הבעיה האמיתית שהוא נועד לפתור, כתובות מומצאות, מכוסה במלואה
+        # ב-link_audit שנכנס באותה גרסה ומחייב check_url 200 חי לכל קישור.
+        if cfg.get("allowed_brand_links") is not None and "/brands/" in low:
+            if base_brand_path(u, cfg) not in cfg["allowed_brand_links"]:
+                rep.err("BRAND_LINK_UNKNOWN",
+                        f"קישור /brands/ שאינו ברשימת עמודי המותג המאושרים של {site}. "
+                        f"בדוק כתיב או הוסף לרשימה: {u[:90]}")
         if ".xml" in low and "sitemap" in low:
             rep.err("XML_SITEMAP", f"sitemap XML אסור — HTML בלבד ({cfg['sitemap_ok']}): {u[:90]}")
         if "myarea." in low and not re.search(r"/login/?$", low):
