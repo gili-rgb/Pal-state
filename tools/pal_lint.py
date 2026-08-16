@@ -32,7 +32,21 @@ from pathlib import Path
 #  v1.2.2 (2026-07-08) — תיקון DELONGHI_FRIDGE false-positive: "מקרר" בעמוד מותג אחר + "דלונגי" ברשימת מותגים/schema. כעת בדיקה פסקה-פסקה.
 #  v1.2.1 (2026-07-07) — תיקון BRAND_BEKO false-positive: "בקו" תפס "בקושי"/"המתנה בקו". כעת רק Beko לטיני או "בקו"+מונח מכשיר.
 #  v1.2.0 (2026-07-05) — קליטת Yoast/Zero-Hallucination/schema עמוק/WCAG/responsive/CTA/WAF-blog מהסקילים.
-VERSION = "1.12.0"
+VERSION = "1.13.0"
+# v1.13.0 (2026-08-16): פלרום עובר לעוגן סמכות ארגוני. הכרעת גיל.
+#   הרקע: SITES הגדיר expert="דניאל", אבל project-plrom.md מעולם לא החזיק
+#   שם, תפקיד או sameAs — רק "עוגן סמכות: מומחה שירות פלרום". התוצאה היא
+#   ישות Person בכל מאמר פלרום בלי jobTitle ובלי הוכחה חיצונית, כלומר
+#   E-E-A-T על הנייר. ישות אדם שאי אפשר לאמת אי אפשר לצטט, וזה בדיוק
+#   המדד שאנחנו מנסים להזיז. אדם מזויף גרוע מארגון אמיתי.
+#   (1) plrom.expert = None, ו-"דניאל" עבר ל-wrong_experts. כל שם פרטי
+#       בתוכן פלרום הוא עכשיו ERROR.
+#   (2) שדה חדש author_org_only (plrom=True, csb/marom=False).
+#   (3) PERSON_ENTITY_FORBIDDEN (ERROR) — ישות Person ב-@graph של אתר
+#       שסומן org_only.
+#   (4) AUTHOR_NOT_ORG (ERROR) — author חייב להצביע על #content-organization
+#       ולא על #content-author.
+#   המעבר הפוך ברגע שיתקבלו שם, תפקיד ו-sameAs אמיתיים: הופכים את הדגל.
 # v1.12.0 (2026-08-16): שכבת הקישורים של מרום יושרה מול המציאות.
 #   (1) MAROM_PC_LINK **נמחק**. הכלל (v1.2.3) טען ש-/product-category/ במרום
 #       הוא "כמעט תמיד 301/404". בדיקה מול מיפוי GSC: 420 עמודים, 308,604
@@ -115,6 +129,7 @@ SITES = {
         "domain": "csb.co.il",
         "expert": "אילן שמה",
         "wrong_experts": ["סמי", "מיכה", "דניאל"],
+        "author_org_only": False,
         "phone_ok": ["08-977-7222", "089777222", "08-9777222"],
         "phone_bad": [],
         "nap_street": "הצורפים 3",
@@ -132,6 +147,7 @@ SITES = {
         "domain": "marom-serv.co.il",
         "expert": "מיכה איתן",
         "wrong_experts": ["דניאל", "סמי", "אילן שמה"],
+        "author_org_only": False,
         # קנוני: *2620 (הכוכבית לפני הספרות — הכרעת גיל 2026-07-05). 2620* מתקבל בעמודים קיימים.
         "phone_ok": ["*2620", "2620*"],
         "phone_bad": ["03-9799799", "039799799", "03-979-9799"],
@@ -167,8 +183,13 @@ SITES = {
     },
     "plrom": {
         "domain": "plrom.co.il",
-        "expert": "דניאל",
-        "wrong_experts": ["מיכה", "סמי", "אילן שמה"],
+        # הכרעת גיל 2026-08-16: לפלרום אין מומחה נקוב מאומת. עוגן ארגוני
+        # במקום ישות Person. "דניאל" הופיע בלינט אך מעולם לא הופיע בקובץ
+        # התוכן עם תפקיד או הוכחה חיצונית, ולכן ייצר ישות אדם ריקה.
+        # expert=None מכבה את בדיקת ההתאמה; כל שם פרטי בתוכן פלרום שגוי.
+        "expert": None,
+        "wrong_experts": ["מיכה", "סמי", "אילן שמה", "דניאל"],
+        "author_org_only": True,
         "phone_ok": ["073-2625600", "0732625600", "073-262-5600"],
         "phone_bad": [],
         "nap_street": "ישראל זמורה 2",
@@ -436,7 +457,21 @@ def check_expert(html, rep, site):
     for wrong in cfg["wrong_experts"]:
         pat = rf"(?<![{HEB_RANGE}]){re.escape(wrong)}(?![{HEB_RANGE}])"
         if re.search(pat, text):
-            rep.err("EXPERT", f"שם מומחה שגוי לאתר {site}: \"{wrong}\" (נכון: {cfg['expert']})")
+            correct = cfg["expert"] or "אין מומחה נקוב — עוגן ארגוני בלבד"
+            rep.err("EXPERT", f"שם מומחה שגוי לאתר {site}: \"{wrong}\" (נכון: {correct})")
+    # v1.13.0: אתר בלי מומחה נקוב מאומת אינו מייצר ישות Person.
+    # ישות אדם בלי jobTitle ובלי sameAs אינה E-E-A-T, היא ישות שאי אפשר
+    # לאמת ולכן אי אפשר לצטט. author מצביע על Organization במקומה.
+    if cfg["author_org_only"]:
+        for blob in re.findall(r"<script[^>]*ld\+json[^>]*>(.*?)</script>", html, flags=re.S | re.I):
+            if re.search(r'"@type"\s*:\s*"Person"', blob):
+                rep.err("PERSON_ENTITY_FORBIDDEN",
+                        f"ישות Person ב-@graph של {site}. לאתר אין מומחה נקוב מאומת, "
+                        f"ו-author חייב להצביע על #content-organization")
+            if re.search(r'"author"\s*:\s*\{[^}]*#content-author', blob):
+                rep.err("AUTHOR_NOT_ORG",
+                        f"author מצביע על #content-author ב-{site}. "
+                        f"חייב להצביע על #content-organization")
 
 def check_phones(html, rep, site):
     cfg = SITES[site]
