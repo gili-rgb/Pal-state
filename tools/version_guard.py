@@ -14,6 +14,7 @@ v7.22, ומי שהועלה אחרון דרס את השני בשקט. אין נע
   VERSION_DUPLICATE   מספר גרסה מופיע פעמיים באותו קובץ
   CHANGELOG_DUPLICATE רשומת היסטוריה קיימת גם ב-SKILL.md וגם ב-CHANGELOG.md
   CHANGELOG_DRIFT     רשומת הגרסה הנוכחית קיימת בשניהם עם טקסט שונה
+  OPEN_PLACEHOLDER    placeholder ממוען לגיל שנשאר בקובץ מקור אמת
   VERSION_REGRESSION  הגרסה בכותרת אינה גדולה מהאחרונה בהיסטוריה
   VERSION_UNLOGGED    גרסה בכותרת בלי רשומת CHANGELOG
   LINT_VERSION_AHEAD  הסקיל מפנה לגרסת pal-lint שאינה קיימת בריפו
@@ -152,6 +153,16 @@ def check_cross_file(skill_dir, s):
                 if bad in ln and right not in ln:
                     err("CROSS_FILE",
                         f"{f.name}:{i} שימוש במונח אסור '{bad}' (הנכון: {right})")
+            # v1.3 (2026-08-16): placeholder ממוען לגיל בתוך קובץ מקור אמת הוא
+            # חוב שקט. אף שער לא ראה אותו, שום דוח לא הציג אותו, והוא ישב
+            # ב-project-marom.md שישה שבועות בזמן שהמכונה קראה את הקובץ
+            # כמקור verbatim. או שהנתון מתקבל ונכתב, או שההיעדר נרשם כהחלטה.
+            # אזכור בתוך backticks הוא תיעוד הכלל ולא שימוש בו — הכלל תפס את
+            # רשומת ה-changelog של עצמו בריצה הראשונה.
+            if "[גיל:" in re.sub(r"`[^`]*`", "", ln):
+                err("OPEN_PLACEHOLDER",
+                    f"{f.name}:{i} placeholder פתוח שממוען לגיל בקובץ מקור אמת. "
+                    f"מלא את הנתון או רשום את היעדרו כהחלטה מפורשת")
 
 
 def check_state_freshness(cur_skill, lint_ver):
