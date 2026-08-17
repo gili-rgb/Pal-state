@@ -308,25 +308,81 @@ def check_ai_channel(html, brief):
         if any(p >= 0 for p in digital_positions) else -1
     if first_digital < 0:
         return
-    for phone in ("08-977-7222", "08-9777222", "*2620", "073-2625600"):
-        pp = html.find(phone)
-        if 0 <= pp < first_digital:
-            warn("AI_CHANNEL_ORDER",
-                 f'מספר המוקד ({phone}) מופיע לפני הערוץ הדיגיטלי. '
-                 f'חיוג למוקד הוא עדיפות אחרונה')
-            break
+    # v8.19: הבדיקה השוותה מחרוזות קשיחות ולכן פספסה כתיב לא קנוני.
+    # במאמר שעלה לאוויר נכתב "08-9777222" במקום "08-977-7222", והכלל
+    # היה עיוור: הטלפון הופיע בתו 6,896 והאזור האישי רק בתו 18,286.
+    # מעכשיו סורקים כל צורת מספר וכל קישור tel:, ולא רשימה סגורה.
+    phone_positions = []
+    for m in re.finditer(r'href="tel:[^"]+"|0\d{1,2}-?\d{3,4}-?\d{3,4}|\*\d{4}', html):
+        d = re.sub(r"\D", "", m.group())
+        if len(d) >= 9 or m.group().startswith("*"):
+            phone_positions.append((m.start(), m.group()))
+    early = [(p, s) for p, s in phone_positions if p < first_digital]
+    if early:
+        pos, s = early[0]
+        warn("AI_CHANNEL_ORDER",
+             f'מספר המוקד ({s[:24]}) מופיע בתו {pos}, לפני הערוץ הדיגיטלי '
+             f'הראשון (תו {first_digital}). חיוג למוקד הוא עדיפות אחרונה')
+
+
+def site_phone_digits(brief):
+    """כל מספרי הטלפון הלגיטימיים של האתר, כספרות בלבד."""
+    out = set()
+    for src in (brief.get("pricing") or {}, brief.get("nap") or {}):
+        for v in src.values():
+            if isinstance(v, str) and re.search(r"\d{7,}", re.sub(r"\D", "", v)):
+                out.add(re.sub(r"\D", "", v))
+    for key in ("phone", "phone_canonical"):
+        v = (brief.get("nap") or {}).get(key)
+        if v:
+            out.add(re.sub(r"\D", "", v))
+    for m in re.finditer(r'"telephone"\s*:\s*"([^"]+)"', brief.get("org_schema", "") or ""):
+        out.add(re.sub(r"\D", "", m.group(1)))
+    return {d for d in out if 9 <= len(d) <= 10}
 
 
 def check_click_to_call(html, brief):
-    """v8.9: 72-76% מהתנועה מובייל. קישור חיוג חייב להיות בר-לחיצה."""
+    """
+    v8.9: 72-76% מהתנועה מובייל. קישור חיוג חייב להיות בר-לחיצה.
+
+    v8.19 (2026-08-17): וגם **נכון**. במאמר שעלה לאוויר,
+    /שירות-בוש-איך-בודקים-אחריות-ומזמינים-תיקון/, שלושת כפתורי החיוג היו
+    `tel:0899777222` — עשר ספרות, בעוד המספר האמיתי הוא 089777222 בן תשע.
+    ספרה אחת מיותרת, וכל לחיצה ממובייל נכשלה. הבאג עבר את שמונת השערים
+    ונחת באוויר, כי אף כלל לא השווה את ספרות ה-tel: למספר הקנוני.
+    """
     text = visible(html)
     phones = re.findall(r"0\d{1,2}-?\d{3}-?\d{4}|\*\d{4}", text)
-    if not phones:
-        return
-    if not re.search(r'href="tel:', html):
+    tels = re.findall(r'href="tel:([^"]+)"', html)
+
+    if phones and not tels:
         warn("NO_CLICK_TO_CALL",
              f"מוזכר מספר טלפון ({phones[0]}) בלי קישור tel:. "
              f"72-76% מהתנועה מובייל — מספר שאינו בר-לחיצה מאבד שיחות")
+        return
+
+    valid = site_phone_digits(brief)
+    valid |= {re.sub(r"\D", "", p) for p in phones}
+    # מספרי הנציגות לגיטימיים גם הם.
+    for k in ("ai_agent", "self_service"):
+        v = (brief.get(k) or {}).get("phone")
+        if v:
+            valid.add(re.sub(r"\D", "", v))
+
+    for raw in set(tels):
+        d = re.sub(r"\D", "", raw)
+        if raw.startswith("*") or d.startswith("*"):
+            continue
+        if not (9 <= len(d) <= 10):
+            err("TEL_LINK_INVALID",
+                f'href="tel:{raw}" — {len(d)} ספרות. מספר ישראלי הוא 9 או 10. '
+                f"כפתור החיוג לא יעבוד במובייל")
+            continue
+        if valid and d not in valid:
+            err("TEL_LINK_MISMATCH",
+                f'href="tel:{raw}" אינו תואם לאף מספר של האתר '
+                f'({", ".join(sorted(valid))}). ספרה עודפת או חסרה '
+                f"מפילה כל לחיצת חיוג במובייל")
 
 
 def check_conversion_path(html, brief):
