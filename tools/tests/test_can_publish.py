@@ -49,7 +49,7 @@ def article(*, h1, body, org, links, phone, person=None):
 <h1>{h1}</h1>
 <p class="direct-answer">{body}</p>
 {link_html}
-<p>לתיאום שירות חייגו {phone}.</p>
+<p>לתיאום שירות חייגו <a href="tel:{re.sub(r'[^0-9*]', '', phone)}">{phone}</a>.</p>
 <script type="application/ld+json">
 {{"@context":"https://schema.org","@graph":[{org}{person_block}]}}
 </script>
