@@ -250,38 +250,70 @@ def check_dominant_h1(html, brief):
 
 def check_ai_channel(html, brief):
     """
-    v8.9: הסטת עומס מהמוקד לערוץ ה-AI.
-    נתוני GBP (2026-08-10): 5,637 שיחות בחודשיים לכרטיס CSB. גיל הגדיר
-    שהמטרה אינה להגדיל את המספר אלא **להסיט אותו** — הנציגה זמינה 24/7
-    בלי המתנה לנציג, והמוקד האנושי הוא חלופה ולא ברירת מחדל.
+    v8.18 (2026-08-17): מסלול פעולה דיגיטלי, מדורג לפי נושא.
 
-    הכלל חל רק כשהמאמר מזכיר תיאום התקנה או יצירת קשר, ורק באתרים
-    שיש בהם נציגה (לפלרום אין).
+    יעד-העל של גיל: להתחיל ולסיים את מסע הלקוח בדיגיטל ולהוריד כוח אדם
+    במוקד. חיוג למוקד הוא **עדיפות אחרונה**.
+
+    הכלל הקודם (v8.9) ירה על "קריאת שירות", "הזמנת טכנאי" ו"מוקד", וכפה
+    קישור לנציגת ה-AI על **כל** תוכן שירות. אבל הנציגה מטפלת ב**תיאום
+    התקנת מוצר חדש בלבד**. התוצאה הייתה שליחת לקוח עם מכשיר תקול לערוץ
+    שאינו יכול לעזור לו, כשלון אינטראקציה, ואז שיחה למוקד — בדיוק ההפך
+    מהמטרה. אותרה על עמוד /שירות-בוש-כיצד-מזמינים-תיקון/ לפני כתיבתו.
+
+    שני מסלולים נפרדים:
+      התקנה  → נציגת ה-AI (מאיה ב-CSB, דנה במרום; לפלרום אין)
+      כל השאר → אזור אישי (myarea) — אחריות, קריאת שירות, תיקון, מעקב
     """
-    agent = brief.get("ai_agent")
-    if not agent:
-        return
     text = visible(html)
-    triggers = ["תיאום", "לתאם", "התקנה", "קריאת שירות", "יצירת קשר",
-                "להזמין טכנאי", "הזמנת טכנאי", "מוקד"]
-    if not any(t in text for t in triggers):
+
+    install_triggers = ["תיאום התקנה", "לתאם התקנה", "התקנת המוצר",
+                        "התקנה של מוצר חדש", "מועד ההתקנה", "ביטול התקנה",
+                        "שינוי מועד"]
+    service_triggers = ["קריאת שירות", "הזמנת טכנאי", "להזמין טכנאי",
+                        "בדיקת אחריות", "אחריות", "תיקון", "מוקד",
+                        "יצירת קשר", "מעקב"]
+
+    agent = brief.get("ai_agent")
+    self_service = brief.get("self_service")
+    digital_positions = []
+
+    # מסלול 1: התקנה בלבד.
+    if agent and any(t in text for t in install_triggers):
+        base = agent["url"].split("?")[0]
+        if base not in html:
+            err("AI_CHANNEL_MISSING",
+                f'המאמר עוסק בתיאום התקנה בלי לקשר לנציגת ה-AI '
+                f'({agent["name"]}, {agent["url"]}). היא זמינה 24/7 בלי '
+                f'המתנה, ומטפלת בתיאום, שינוי מועד וביטול התקנה')
+        else:
+            NOTES.append(f"ערוץ AI: {agent['name']} מקושר (התקנה)")
+            digital_positions.append(html.find(base))
+
+    # מסלול 2: כל שאר נושאי השירות.
+    if self_service and any(t in text for t in service_triggers):
+        if self_service["url"] not in html:
+            err("SELF_SERVICE_MISSING",
+                f'המאמר עוסק באחריות, תיקון או קריאת שירות בלי לקשר '
+                f'לאזור האישי ({self_service["url"]}). שם הלקוח סוגר את '
+                f'הפנייה בעצמו. **נציגת ה-AI אינה המסלול לנושאים האלה**')
+        else:
+            NOTES.append("אזור אישי מקושר")
+            digital_positions.append(html.find(self_service["url"]))
+
+    # המוקד אחרון. אם מספר מופיע לפני כל ערוץ דיגיטלי — סדר שגוי.
+    if not digital_positions:
         return
-    has_url = agent["url"].split("?")[0] in html
-    if not has_url:
-        err("AI_CHANNEL_MISSING",
-            f'המאמר מזכיר תיאום או יצירת קשר בלי לקשר לנציגת ה-AI '
-            f'({agent["name"]}, {agent["url"]}). היא זמינה 24/7 בלי המתנה, '
-            f'והמטרה להסיט עומס מהמוקד')
+    first_digital = min(p for p in digital_positions if p >= 0) \
+        if any(p >= 0 for p in digital_positions) else -1
+    if first_digital < 0:
         return
-    NOTES.append(f"ערוץ AI: {agent['name']} מקושר")
-    # סדר ההצגה: הנציגה לפני מספר המוקד
-    ai_pos = html.find(agent["url"].split("?")[0])
-    for phone in ("08-977-7222", "08-9777222", "*2620"):
+    for phone in ("08-977-7222", "08-9777222", "*2620", "073-2625600"):
         pp = html.find(phone)
-        if 0 <= pp < ai_pos:
+        if 0 <= pp < first_digital:
             warn("AI_CHANNEL_ORDER",
-                 f'מספר המוקד ({phone}) מופיע לפני ערוץ ה-AI. '
-                 f'הנציגה היא האפשרות הראשונה, המוקד חלופה')
+                 f'מספר המוקד ({phone}) מופיע לפני הערוץ הדיגיטלי. '
+                 f'חיוג למוקד הוא עדיפות אחרונה')
             break
 
 
