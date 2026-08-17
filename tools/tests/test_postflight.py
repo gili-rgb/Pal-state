@@ -356,6 +356,44 @@ PO.check_ai_channel(
     ROUTE_BRIEF)
 check("טלפון לפני הערוץ הדיגיטלי מתריע", "AI_CHANNEL_ORDER" in rules("WARNS"), True)
 
+
+# ---------- tel: תואם ל-NAP (v8.19) ----------
+# הרקע: /שירות-בוש-איך-בודקים-אחריות-ומזמינים-תיקון/ עלה לאוויר עם
+# href="tel:0899777222" — עשר ספרות במקום תשע. שלושת כפתורי החיוג לא
+# עבדו במובייל, ו-72-76% מהתנועה היא מובייל. הבאג עבר את שמונת השערים.
+TEL_BRIEF = {"nap": {"phone": "08-977-7222"},
+             "ai_agent": {"name": "מאיה", "url": "https://csb.co.il/ai-install/?dept=csb",
+                          "phone": "079-9198357"},
+             "self_service": {"url": "https://myarea.csb.co.il", "name": "האזור האישי"}}
+
+for name, html, want in [
+    ("tel: עם ספרה עודפת נחסם",
+     '<p>חייגו <a href="tel:0899777222">08-977-7222</a>.</p>', {"TEL_LINK_MISMATCH"}),
+    ("tel: תקין עובר",
+     '<p>חייגו <a href="tel:089777222">08-977-7222</a>.</p>', set()),
+    ("tel: קצר מדי נחסם",
+     '<p>חייגו <a href="tel:08977">08-977-7222</a>.</p>', {"TEL_LINK_INVALID"}),
+    ("tel: של נציגת ה-AI לגיטימי",
+     '<p>מאיה <a href="tel:0799198357">079-9198357</a>.</p>', set()),
+    ("מספר בלי tel: מתריע בלבד",
+     "<p>חייגו 08-977-7222.</p>", set()),
+]:
+    reset()
+    PO.check_click_to_call(f"<article>{html}</article>", TEL_BRIEF)
+    check(name, rules("ERRORS"), want)
+
+reset()
+PO.check_click_to_call("<article><p>חייגו 08-977-7222.</p></article>", TEL_BRIEF)
+check("מספר בלי tel: מתריע NO_CLICK_TO_CALL", "NO_CLICK_TO_CALL" in rules("WARNS"), True)
+
+# הכתיב הלא קנוני שהיה עיוור לכלל הסדר
+reset()
+PO.check_ai_channel(
+    '<article><p>לבדיקת אחריות התקשרו <a href="tel:089777222">08-9777222</a>.</p>'
+    '<p>או <a href="https://myarea.csb.co.il">אזור אישי</a>.</p></article>', TEL_BRIEF)
+check("סדר: כתיב לא קנוני (08-9777222) נתפס עכשיו",
+      "AI_CHANNEL_ORDER" in rules("WARNS"), True)
+
 if FAILED:
     print("\n🔴 test_postflight נכשל:")
     for f in FAILED:
