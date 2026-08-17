@@ -298,6 +298,64 @@ for name, html, want in [
     check_evasive_answers(html, r, "blog")
     check(name, len(r.errors), want)
 
+
+# ---------- מסלול פעולה דיגיטלי (v8.18) ----------
+# הרקע: AI_CHANNEL_MISSING ירה על "קריאת שירות" ו"הזמנת טכנאי" וכפה קישור
+# למאיה, שמטפלת בתיאום התקנה בלבד. לקוח עם מכשיר תקול היה נשלח לערוץ שאינו
+# יכול לעזור לו, נכשל, ומתקשר למוקד — ההפך מהמטרה.
+ROUTE_BRIEF = {
+    "ai_agent": {"name": "מאיה", "url": "https://csb.co.il/ai-install/?dept=csb",
+                 "phone": "079-919-8357"},
+    "self_service": {"url": "https://myarea.csb.co.il", "name": "האזור האישי"},
+}
+NO_SS = {"ai_agent": ROUTE_BRIEF["ai_agent"], "self_service": None}
+# פלרום: אזור אישי קיים, נציגת AI לא. זהו מסלול הפעולה הדיגיטלי היחיד שלה.
+PLROM_BRIEF = {"ai_agent": None,
+               "self_service": {"url": "https://myarea.plrom.co.il/login/",
+                                "name": "האזור האישי"}}
+
+A_MAYA = '<a href="https://csb.co.il/ai-install/?dept=csb">מאיה</a>'
+A_AREA = '<a href="https://myarea.csb.co.il">אזור אישי</a>'
+
+for name, html, brief, want_err in [
+    ("שירות בלי אזור אישי נחסם",
+     "<p>לפתיחת קריאת שירות ובדיקת אחריות התקשרו 08-977-7222.</p>",
+     ROUTE_BRIEF, {"SELF_SERVICE_MISSING"}),
+    ("שירות שמקשר למאיה בלבד עדיין נחסם (הבאג הישן)",
+     f"<p>לפתיחת קריאת שירות ובדיקת אחריות פנו ל{A_MAYA}.</p>",
+     ROUTE_BRIEF, {"SELF_SERVICE_MISSING"}),
+    ("שירות שמקשר לאזור אישי עובר",
+     f"<p>לפתיחת קריאת שירות ובדיקת אחריות היכנסו ל{A_AREA}.</p>",
+     ROUTE_BRIEF, set()),
+    ("תיאום התקנה בלי מאיה נחסם",
+     "<p>לתיאום התקנה של מוצר חדש התקשרו.</p>",
+     ROUTE_BRIEF, {"AI_CHANNEL_MISSING"}),
+    ("תיאום התקנה עם מאיה עובר",
+     f"<p>לתיאום התקנה של מוצר חדש פנו ל{A_MAYA}.</p>",
+     ROUTE_BRIEF, set()),
+    ("אתר בלי אזור אישי מוגדר אינו נחסם",
+     "<p>לפתיחת קריאת שירות ובדיקת אחריות התקשרו 073-2625600.</p>",
+     NO_SS, set()),
+    ("פלרום: שירות בלי אזור אישי נחסם",
+     "<p>לפתיחת קריאת שירות ובדיקת אחריות התקשרו 073-2625600.</p>",
+     PLROM_BRIEF, {"SELF_SERVICE_MISSING"}),
+    ("פלרום: אזור אישי עובר, ובלי לדרוש נציגת AI",
+     '<p>לבדיקת אחריות היכנסו ל<a href="https://myarea.plrom.co.il/login/">אזור</a>.</p>',
+     PLROM_BRIEF, set()),
+    ("פלרום: תיאום התקנה אינו דורש נציגה (אין לה)",
+     "<p>לתיאום התקנה של מוצר חדש פנו אלינו.</p>",
+     PLROM_BRIEF, set()),
+]:
+    reset()
+    PO.check_ai_channel(f"<article>{html}</article>", brief)
+    check(name, rules("ERRORS"), want_err)
+
+reset()
+PO.check_ai_channel(
+    f'<article><p>לבדיקת אחריות התקשרו 08-977-7222.</p><p>או {A_AREA}.</p></article>',
+    ROUTE_BRIEF)
+check("טלפון לפני הערוץ הדיגיטלי מתריע", "AI_CHANNEL_ORDER" in rules("WARNS"), True)
+
 if FAILED:
     print("\n🔴 test_postflight נכשל:")
     for f in FAILED:
