@@ -1,4 +1,4 @@
-\# content-machine — CHANGELOG
+# content-machine — CHANGELOG
 
 היסטוריית גרסאות מלאה. הגרסה הנוכחית ושורת השינוי שלה בראש SKILL.md.
 
