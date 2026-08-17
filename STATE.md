@@ -15,7 +15,7 @@
 | ai-visibility-audit | v1.1 | פעיל | baseline 2026-07-08. לא נמדד מחדש |
 | off-site-radar | v1.0 | פעיל | baseline 2026-07-08 |
 | pal-lint (tools/) | **v1.14.0** | selftest ירוק | 108 כללים (עם postflight) |
-| preflight.py (tools/) | v1.7 | brief רזה 42KB + מלא 123KB | allowed_topics, refresh_queue, dominant_pages, partner_dominated, pricing, ai_agent, intent |
+| preflight.py (tools/) | **v1.8** | brief רזה 42KB + מלא 123KB | allowed_topics, refresh_queue, dominant_pages, partner_dominated, pricing, ai_agent, intent |
 | postflight.py (tools/) | **v1.5** | שער יציאה | EVASIVE_ANSWER, NO_CONVERSION_PATH, AI_CHANNEL, DOMINANT_LINK, **DOMINANT_H1_DUPLICATE**, REFRESH_* |
 | ledger_lint (v1.1, STALE_NOT_YET), version_guard (**v1.2**), ledger_merge, ledger_patch | v1.0-1.2 | ב-CI | **8 שערים** על כל push: ledger_lint, selftest, test_flight, test_postflight, test_ledger_tools, **test_can_publish**, test_version_guard, version_guard |
 | ai_visibility_pull, ga_pull, bing_ai_presence, gbp_analyze, youtube_pull | — | ב-pal-gsc-data | שישה מקורות מדידה, קרון אוטומטי |
