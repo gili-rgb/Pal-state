@@ -604,12 +604,23 @@ def enrich_refresh(items, pages, ledger, site=None):
         led = by_url.get(url, {})
         # פער = ביקוש אמיתי במיקום חלש. מעל 40 זה כבר לא אותו עמוד בפועל.
         gaps = [q for q in ranked if 10 < q["position"] <= 40 and q["impressions"] >= 15]
+        # v1.8 (2026-08-16): best_position הוא השאילתה הטובה ביותר מתוך מאות,
+        # והוא הוצג לצד total_impressions כאילו הוא ביצועי העמוד. בפועל
+        # /שירות-בוש-כיצד-מזמינים-תיקון/ הציג "72,697 חשיפות | pos 1.1"
+        # בזמן שהמיקום המשוקלל האמיתי הוא 5.6 (271 שאילתות). גיל תכנן
+        # ריענון על סמך המספר הזה. מעכשיו הממוצע המשוקלל הוא השדה הראשי.
+        _imp = sum(q["impressions"] for q in rows) or 1
+        _clk = sum(q["clicks"] for q in rows)
         g.update({
             "existing_h1": led.get("h1", ""),
             "ledger_queries": led.get("queries", []),
             "total_impressions": sum(q["impressions"] for q in rows),
-            "total_clicks": sum(q["clicks"] for q in rows),
+            "total_clicks": _clk,
+            "avg_position": round(
+                sum(q["position"] * q["impressions"] for q in rows) / _imp, 1),
             "best_position": round(min((q["position"] for q in ranked), default=99), 1),
+            "ctr": round(_clk / _imp * 100, 2),
+            "query_count": len(rows),
             "ranking_for": [{"query": q["query"], "position": round(q["position"], 1),
                              "impressions": q["impressions"], "clicks": q["clicks"]}
                             for q in ranked[:10]],
@@ -771,7 +782,8 @@ def phase_plan(site):
     slim["refresh_queue"] = [
         {**{k: v for k, v in r.items() if k in
             ("url", "existing_h1", "total_impressions", "total_clicks",
-             "best_position", "frozen", "video")},
+             "best_position", "avg_position", "ctr", "query_count",
+             "frozen", "video")},
          "gap_queries": r.get("gap_queries", []),
          "ranking_for": r.get("ranking_for", [])[:5],
          "triggers": [t["query"] for t in r.get("triggers", [])[:4]]}
@@ -823,7 +835,8 @@ def phase_plan(site):
         print(f"   {o['impressions']:6d} | {o['query'][:45]}")
     print(f"\n🔄 תור Refresh ({len(refresh)}) — ממוין לפי פוטנציאל:")
     for o in refresh[:3]:
-        print(f"   {o['total_impressions']:7d} חשיפות | pos {o['best_position']:5.1f} | "
+        print(f"   {o['total_impressions']:7d} חשיפות | pos ממוצע {o['avg_position']:4.1f} "
+              f"(מיטבי {o['best_position']:4.1f}) | CTR {o['ctr']:5.2f}% | "
               f"{len(o['gap_queries']):2d} פערים | {o['url'].split('.co.il')[-1][:40]}")
     print(f"\nנכתב: {p} ({p.stat().st_size // 1024}KB) "
           f"| מלא: {full.name} ({full.stat().st_size // 1024}KB)")
